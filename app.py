@@ -244,6 +244,26 @@ def local_css():
     @keyframes soft-pulse { 0%,100%{opacity:1} 50%{opacity:.5} }
     .pulse { animation: soft-pulse 2.2s ease-in-out infinite; }
 
+    /* Plotly Chart Entry Animations */
+    @keyframes bar-grow {
+        0% { transform: scaleY(0); opacity: 0; }
+        100% { transform: scaleY(1); opacity: 1; }
+    }
+    @keyframes chart-fade {
+        0% { opacity: 0; transform: translateY(10px); }
+        100% { opacity: 1; transform: translateY(0); }
+    }
+    .js-plotly-plot .cartesianlayer .trace.bars rect.point {
+        transform-box: fill-box;
+        transform-origin: bottom;
+        animation: bar-grow 1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+    .js-plotly-plot .pie path {
+        transform-box: fill-box;
+        transform-origin: center;
+        animation: chart-fade 1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
     hr { border: none !important; border-top: 1px solid rgba(255, 255, 255, 0.8) !important; margin: 1.5rem 0 !important; box-shadow: 0 1px 0 rgba(99, 102, 241, 0.05) !important; }
     ::-webkit-scrollbar { width: 6px; height: 6px; }
     ::-webkit-scrollbar-track { background: transparent; }
