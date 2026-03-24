@@ -23,16 +23,16 @@ def local_css():
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap');
     :root {
-        --th: #4b3e7c; /* Deep purple text for headings */
-        --tb: #6a6287; /* Body text */
-        --tm: #9aa0bc; /* Muted text */
-        --primary: #9b63ff; 
-        --rose: #ee5e76; --amber: #e9a147; --sage: #2bb996; --slate: #604e9c;
-        --rose-a: rgba(238,94,118,0.2); --amber-a: rgba(233,161,71,0.2);
-        --sage-a: rgba(43,185,150,0.2); --slate-a: rgba(96,78,156,0.2);
-        --glass-bg: rgba(255, 255, 255, 0.45);
-        --glass-border: rgba(255, 255, 255, 0.7);
-        --glass-shadow: 0 8px 32px 0 rgba(110, 100, 160, 0.1);
+        --th: #3e4462; /* Muted deep blue-grey for headings */
+        --tb: #5c6282; /* Muted body text */
+        --tm: #a0a6cc; /* Sub-info text */
+        --primary: #62b1ff; /* Soft blue */
+        --accent: #8a7dbb;  /* Muted purple */
+        --grad: linear-gradient(135deg, #62b1ff 0%, #8a7dbb 100%);
+        --rose: #ee5e76; --amber: #e9a147; --sage: #2bb996; --slate: #62b1ff;
+        --glass-bg: rgba(255, 255, 255, 0.55);
+        --glass-border: rgba(255, 255, 255, 0.8);
+        --glass-shadow: 0 15px 45px 0 rgba(90, 100, 160, 0.1);
     }
     
     html, body, [class*="css"], .stApp {
@@ -42,178 +42,139 @@ def local_css():
     
     /* Main Background */
     .stApp, [data-testid="stAppViewContainer"] {
-        background: linear-gradient(135deg, #e3e0ff 0%, #f4efff 40%, #e8f0fe 100%) !important;
+        background: #f4f6fa !important; /* Very light grey / off-white */
         background-attachment: fixed !important;
     }
 
     [data-testid="stHeader"], [data-testid="stToolbar"] { background: transparent !important; box-shadow: none !important; }
     .main .block-container { padding: 2.5rem 2.8rem !important; max-width: 1120px; }
     
-    /* Ensure child blocks are transparent */
-    .stApp > div > div > div, section.main, section.main > div, .block-container,
-    div[data-testid="column"], div[data-testid="stVerticalBlock"],
-    div[data-testid="stHorizontalBlock"], .element-container {
-        background: transparent !important;
-    }
-
     /* Sidebar Glassmorphism */
     [data-testid="stSidebar"] { 
-        background-color: rgba(255, 255, 255, 0.5) !important;
-        backdrop-filter: blur(20px) !important;
-        -webkit-backdrop-filter: blur(20px) !important;
-        border-right: 1px solid rgba(255, 255, 255, 0.8) !important; 
-        box-shadow: 4px 0 24px rgba(120, 110, 150, 0.05) !important; 
+        background-color: rgba(255, 255, 255, 0.3) !important;
+        backdrop-filter: blur(25px) !important;
+        -webkit-backdrop-filter: blur(25px) !important;
+        border-right: 1px solid rgba(255, 255, 255, 0.5) !important; 
+        box-shadow: 10px 0 40px rgba(0, 0, 0, 0.02) !important; 
     }
-    [data-testid="stSidebar"] .block-container { padding: 1.8rem 1rem !important; }
 
     /* Typography */
     h1 { font-size: 2.2rem !important; font-weight: 800 !important; color: var(--th) !important; letter-spacing: -0.4px; margin-bottom: 0.4rem !important; }
     h2 { font-weight: 700 !important; color: var(--th) !important; font-size: 1.25rem !important; border: none !important; padding: 0 !important; }
-    h3 { font-weight: 600 !important; color: var(--th) !important; font-size: 1rem !important; }
-    p { color: var(--tb); line-height: 1.7; }
-    .highlight-text { color: var(--primary) !important; -webkit-text-fill-color: var(--primary) !important; background: none !important; font-weight: 800; }
+    .highlight-text { 
+        background: var(--grad) !important;
+        -webkit-background-clip: text !important;
+        -webkit-text-fill-color: transparent !important;
+        font-weight: 800;
+    }
 
-    /* Cards - Glassmorphism */
+    /* Cards - Enhanced Glassmorphism */
     .nm-card { 
         background: var(--glass-bg); 
         border-radius: 20px; 
         padding: 1.8rem 2rem; 
         margin-bottom: 1.2rem; 
         box-shadow: var(--glass-shadow); 
-        backdrop-filter: blur(12px);
-        -webkit-backdrop-filter: blur(12px);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
         border: 1px solid var(--glass-border);
         border-top: 1px solid rgba(255,255,255,0.9);
         border-left: 1px solid rgba(255,255,255,0.9);
-        transition: transform .2s, box-shadow .2s; 
+        transition: transform .3s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow .3s; 
     }
-    .nm-card:hover { transform: translateY(-3px); box-shadow: 0 12px 40px 0 rgba(110, 100, 160, 0.15); }
+    .nm-card:hover { transform: translateY(-5px); box-shadow: 0 20px 60px 0 rgba(70, 80, 150, 0.15); }
     
     .nm-sm { 
         background: var(--glass-bg); 
         border-radius: 16px; 
         padding: 1.2rem 1.3rem; 
         box-shadow: var(--glass-shadow); 
-        backdrop-filter: blur(12px);
+        backdrop-filter: blur(16px);
         border: 1px solid var(--glass-border);
     }
     .nm-inset { 
-        background: rgba(255, 255, 255, 0.25); 
+        background: rgba(255, 255, 255, 0.15); 
         border-radius: 14px; 
         padding: 1rem 1.2rem; 
-        box-shadow: inset 2px 2px 8px rgba(110, 100, 160, 0.08); 
-        border: 1px solid rgba(255, 255, 255, 0.4);
+        box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.03); 
+        border: 1px solid rgba(255, 255, 255, 0.2);
     }
 
-    .sec-label { font-size: 0.72rem; font-weight: 700; color: var(--tm); text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 0.75rem; display: block; }
-
-    /* Pills */
-    .stat-pill { 
-        display: inline-flex; align-items: center; gap: 7px; 
-        background: rgba(255, 255, 255, 0.7); 
-        border-radius: 50px; padding: 0.4rem 1rem; 
-        box-shadow: 0 2px 8px rgba(110, 100, 160, 0.08); 
-        border: 1px solid rgba(255, 255, 255, 0.8);
-        font-size: 0.78rem; font-weight: 600; color: var(--th); margin: 3px; 
-    }
-    .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
-
-    .feat-card { 
-        background: var(--glass-bg); border-radius: 18px; padding: 1.3rem; 
-        box-shadow: var(--glass-shadow); backdrop-filter: blur(10px);
-        border: 1px solid var(--glass-border); transition: all .2s; 
-    }
-    .feat-card:hover { box-shadow: 0 12px 30px rgba(110, 100, 160, 0.15); transform: translateY(-4px); }
-    .feat-icon { width: 44px; height: 44px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 20px; margin-bottom: 0.75rem; box-shadow: 0 4px 10px rgba(110, 100, 160, 0.1); background: #ffffff; }
-
-    /* Buttons */
+    /* Buttons - more glass-like */
     .stButton>button { 
-        background: rgba(255, 255, 255, 0.6) !important; 
-        color: var(--primary) !important; 
-        border: 1px solid rgba(255, 255, 255, 0.9) !important; 
+        background: rgba(255, 255, 255, 0.2) !important; 
+        color: var(--th) !important; 
+        border: 1px solid rgba(255, 255, 255, 0.6) !important; 
         border-radius: 50px !important; 
         padding: 0.65rem 1.6rem !important; 
         font-family: 'Nunito', sans-serif !important; 
         font-weight: 700 !important; font-size: 0.95rem !important; 
-        box-shadow: 0 4px 15px rgba(110, 100, 160, 0.1) !important; 
-        backdrop-filter: blur(10px); transition: all .2s ease !important; width: 100%; 
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.05) !important; 
+        backdrop-filter: blur(12px); 
+        -webkit-backdrop-filter: blur(12px);
+        transition: all .25s ease !important; width: 100%; 
     }
-    .stButton>button:hover { box-shadow: 0 6px 20px rgba(110, 100, 160, 0.15) !important; background: rgba(255, 255, 255, 0.9) !important; transform: translateY(-2px); }
-    .stButton>button:active { transform: translateY(0); }
+    .stButton>button:hover { 
+        background: rgba(255, 255, 255, 0.4) !important; 
+        border-color: rgba(255, 255, 255, 0.8) !important;
+        box-shadow: 0 12px 25px rgba(0, 0, 0, 0.08) !important; 
+        transform: translateY(-2px); 
+    }
 
     /* Primary CTA */
     .cta-btn>button { 
-        background: linear-gradient(90deg, #9b63ff 0%, #62b1ff 100%) !important; 
+        background: var(--grad) !important; 
         color: #fff !important; border: none !important;
-        box-shadow: 0 4px 18px rgba(155, 99, 255, 0.45) !important; 
+        box-shadow: 0 10px 25px rgba(98, 177, 255, 0.35) !important; 
     }
-    .cta-btn>button:hover { background: linear-gradient(90deg, #a777ff 0%, #7d9ffa 100%) !important; box-shadow: 0 6px 22px rgba(155, 99, 255, 0.6) !important; color: #fff !important; }
+    .cta-btn>button:hover { 
+        opacity: 0.9;
+        box-shadow: 0 12px 30px rgba(98, 177, 255, 0.5) !important; 
+    }
 
-    /* Submit Button inside Form */
+    /* Submit Button */
     [data-testid="stFormSubmitButton"]>button { 
-        background: linear-gradient(90deg, #9b63ff 0%, #62b1ff 100%) !important; 
+        background: var(--grad) !important; 
         color: #fff !important; border: none !important; border-radius: 50px !important; 
-        font-weight: 700 !important; font-size: 0.95rem !important; padding: 0.7rem 2rem !important; 
-        box-shadow: 0 4px 18px rgba(155, 99, 255, 0.45) !important; width: 100%; transition: all .2s ease !important; 
+        font-weight: 700 !important; box-shadow: 0 10px 25px rgba(98, 177, 255, 0.35) !important; 
+        width: 100%; transition: all .2s ease !important; 
     }
-    [data-testid="stFormSubmitButton"]>button:hover { box-shadow: 0 6px 22px rgba(155, 99, 255, 0.6) !important; }
 
     /* Inputs */
     .stTextInput>div>div>input, .stNumberInput>div>div>input, .stSelectbox>div>div, .stTextArea textarea {
-        background: rgba(255, 255, 255, 0.6) !important; border: 1px solid rgba(255, 255, 255, 0.8) !important; border-radius: 12px !important;
-        box-shadow: inset 0 2px 6px rgba(110, 100, 160, 0.05) !important;
-        color: var(--th) !important; font-family: 'Nunito', sans-serif !important; font-size: 0.9rem !important; font-weight: 600 !important; 
+        background: rgba(255, 255, 255, 0.4) !important; border: 1px solid rgba(255, 255, 255, 0.5) !important; border-radius: 12px !important;
+        box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.02) !important;
+        color: var(--th) !important; font-weight: 600 !important; 
     }
     .stTextInput>div>div>input:focus, .stNumberInput>div>div>input:focus, .stSelectbox>div>div:focus-within {
-        box-shadow: inset 0 2px 6px rgba(110, 100, 160, 0.05), 0 0 0 2px rgba(155, 99, 255, 0.3) !important; border-color: var(--primary) !important; 
-    }
-    .stTextInput label, .stNumberInput label, .stSelectbox label, .stSlider label, .stTextArea label {
-        font-size: 0.78rem !important; font-weight: 600 !important; color: var(--tm) !important;
-        text-transform: uppercase !important; letter-spacing: 0.8px !important; 
+        box-shadow: 0 0 0 3px rgba(98, 177, 255, 0.15) !important; border-color: var(--primary) !important; 
     }
 
-    [data-testid="stSlider"]>div>div>div { background: var(--primary) !important; }
-    [data-testid="stSlider"]>div>div>div>div { background: var(--primary) !important; box-shadow: 0 0 8px rgba(155, 99, 255, 0.5) !important; border: 2px solid white !important; }
+    [data-testid="stSlider"]>div>div>div { background: var(--grad) !important; }
+    [data-testid="stSlider"]>div>div>div>div { background: white !important; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important; border: 3px solid var(--primary) !important; }
 
-    [data-testid="stMetric"] { background: var(--glass-bg) !important; border-radius: 16px !important; padding: 1.2rem 1.4rem !important; box-shadow: var(--glass-shadow) !important; border: 1px solid var(--glass-border); backdrop-filter: blur(10px); }
-    [data-testid="stMetricValue"] { font-size: 2rem !important; font-weight: 700 !important; font-family: 'DM Mono', monospace !important; color: var(--th) !important; }
-    [data-testid="stMetricLabel"] { font-size: 0.72rem !important; text-transform: uppercase !important; letter-spacing: 1.2px !important; color: var(--tm) !important; font-weight: 700 !important; }
-
-    /* Progress bar */
-    .stProgress>div>div>div { background: linear-gradient(90deg, #9b63ff, #62b1ff) !important; border-radius: 20px !important; }
-    .stProgress>div>div { background: rgba(255, 255, 255, 0.6) !important; box-shadow: inset 0 2px 6px rgba(110, 100, 160, 0.1) !important; border-radius: 20px !important; border: 1px solid rgba(255,255,255,0.5) !important; height: 10px !important; }
+    [data-testid="stMetric"] { background: var(--glass-bg) !important; border-radius: 16px !important; box-shadow: var(--glass-shadow) !important; border: 1px solid var(--glass-border); backdrop-filter: blur(16px); }
+    [data-testid="stMetricValue"] { color: var(--th) !important; }
 
     /* Tabs */
-    .stTabs [data-baseweb="tab-list"] { background: rgba(255, 255, 255, 0.5) !important; border-radius: 14px; padding: 8px; box-shadow: inset 0 2px 6px rgba(110, 100, 160, 0.05); gap: 12px; backdrop-filter: blur(8px); }
-    .stTabs [data-baseweb="tab"] { background: transparent !important; color: var(--tm) !important; border-radius: 10px !important; font-weight: 600 !important; font-size: 0.9rem !important; padding: 0.6rem 1.2rem !important; }
-    .stTabs [aria-selected="true"] { background: #ffffff !important; color: var(--primary) !important; box-shadow: 0 4px 10px rgba(110, 100, 160, 0.08) !important; }
+    .stTabs [data-baseweb="tab-list"] { background: rgba(255, 255, 255, 0.3) !important; border-radius: 14px; padding: 6px; gap: 8px; backdrop-filter: blur(10px); }
+    .stTabs [aria-selected="true"] { background: #ffffff !important; color: var(--primary) !important; box-shadow: 0 8px 20px rgba(0, 0, 0, 0.05) !important; }
 
     /* Sidebar Radio */
-    [data-testid="stRadio"]>div { gap: 4px !important; }
-    [data-testid="stRadio"] label { background: transparent !important; border-radius: 12px !important; padding: 0.65rem 1rem !important; font-size: 0.95rem !important; font-weight: 600 !important; color: var(--th) !important; cursor: pointer; transition: all .2s ease; display: flex !important; align-items: center; gap: 8px; }
-    [data-testid="stRadio"] label:hover { background: rgba(255, 255, 255, 0.6) !important; box-shadow: 0 4px 10px rgba(110, 100, 160, 0.05); color: var(--primary) !important; }
-
-    /* Dropdowns */
-    [data-baseweb="popover"] [data-baseweb="menu"] { background: rgba(255, 255, 255, 0.9) !important; backdrop-filter: blur(12px) !important; border-radius: 14px !important; box-shadow: 0 8px 24px rgba(110, 100, 160, 0.15) !important; border: 1px solid rgba(255,255,255,0.8) !important; }
-    [data-baseweb="option"]:hover { background: rgba(155, 99, 255, 0.1) !important; border-radius: 8px !important; color: var(--primary) !important; font-weight: 700; }
+    [data-testid="stRadio"] label:hover { background: rgba(255, 255, 255, 0.4) !important; color: var(--primary) !important; }
 
     /* Number input buttons */
-    [data-testid="stNumberInput"] button { background: rgba(255, 255, 255, 0.7) !important; border: 1px solid rgba(255, 255, 255, 0.9) !important; border-radius: 8px !important; box-shadow: 0 2px 6px rgba(110, 100, 160, 0.05) !important; color: var(--primary) !important; font-weight: 600 !important; }
-    [data-testid="stNumberInput"] button:hover { background: #fff !important; color: #7d65ff !important; }
+    [data-testid="stNumberInput"] button { background: rgba(255, 255, 255, 0.5) !important; border-radius: 8px !important; color: var(--primary) !important; }
+    [data-testid="stNumberInput"] button:hover { background: #fff !important; }
 
-    .badge { display: inline-block; border-radius: 50px; padding: 4px 16px; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.5px; }
-    .badge-h { background: #fff; color: var(--rose); box-shadow: 0 4px 10px rgba(238, 94, 118, 0.2); }
-    .badge-m { background: #fff; color: var(--amber); box-shadow: 0 4px 10px rgba(233, 161, 71, 0.2); }
-    .badge-l { background: #fff; color: var(--sage); box-shadow: 0 4px 10px rgba(43, 185, 150, 0.2); }
+    .badge { display: inline-block; border-radius: 50px; padding: 4px 16px; font-size: 0.75rem; font-weight: 700; }
+    .badge-h { background: #fff; color: var(--rose); box-shadow: 0 8px 20px rgba(238, 94, 118, 0.15); }
+    .badge-m { background: #fff; color: var(--amber); box-shadow: 0 8px 20px rgba(233, 161, 71, 0.15); }
+    .badge-l { background: #fff; color: var(--sage); box-shadow: 0 8px 20px rgba(43, 185, 150, 0.15); }
 
-    @keyframes soft-pulse { 0%,100%{opacity:1} 50%{opacity:.5} }
-    .pulse { animation: soft-pulse 2.2s ease-in-out infinite; }
-
-    hr { border: none !important; border-top: 1px solid rgba(255, 255, 255, 0.5) !important; margin: 1.5rem 0 !important; box-shadow: 0 1px 0 rgba(110, 100, 160, 0.05) !important; }
-    ::-webkit-scrollbar { width: 6px; height: 6px; }
-    ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb { background: rgba(155, 99, 255, 0.3); border-radius: 3px; }
-    ::-webkit-scrollbar-thumb:hover { background: rgba(155, 99, 255, 0.6); }
+    hr { border-top: 1px solid rgba(0, 0, 0, 0.05) !important; }
+    ::-webkit-scrollbar-thumb { background: rgba(98, 177, 255, 0.2); }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(98, 177, 255, 0.5); }
     .js-plotly-plot .plotly .bg { fill: transparent !important; }
     </style>
     """, unsafe_allow_html=True)
