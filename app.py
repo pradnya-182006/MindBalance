@@ -40,27 +40,36 @@ def local_css():
         color: var(--tb) !important;
     }
     
-    /* Main Background */
-    .stApp, [data-testid="stAppViewContainer"] {
-        background: linear-gradient(135deg, #eef2ff 0%, #f3e8ff 50%, #f8fafc 100%) !important; 
+    /* MAIN BACKGROUND */
+    .stApp {
+        background: linear-gradient(135deg, #eef2ff, #e0e7ff, #f5f3ff) !important;
         background-attachment: fixed !important;
+    }
+    
+    /* TARGET STREAMLIT BLOCKS (IMPORTANT) */
+    [data-testid="stAppViewContainer"] {
+        background: transparent !important;
     }
 
     [data-testid="stHeader"], [data-testid="stToolbar"] { background: transparent !important; box-shadow: none !important; }
     .main .block-container { padding: 2.5rem 2.8rem !important; max-width: 1120px; }
     
-    /* Sidebar Glassmorphism */
-    [data-testid="stSidebar"] { 
-        background-color: rgba(255, 255, 255, 0.4) !important;
-        backdrop-filter: blur(24px) !important;
-        -webkit-backdrop-filter: blur(24px) !important;
+    /* SIDEBAR GLASS */
+    section[data-testid="stSidebar"] {
+        background: rgba(255,255,255,0.25) !important;
+        backdrop-filter: blur(20px) !important;
+        -webkit-backdrop-filter: blur(20px) !important;
         border-right: 1px solid rgba(255, 255, 255, 0.5) !important; 
-        box-shadow: 4px 0 30px rgba(99, 102, 241, 0.05) !important; 
     }
     [data-testid="stSidebar"] .block-container { padding: 1.8rem 1rem !important; }
 
     /* Typography */
-    h1 { font-size: 2.4rem !important; font-weight: 800 !important; color: var(--th) !important; letter-spacing: -0.5px; margin-bottom: 0.4rem !important; }
+    /* TEXT GLOW */
+    h1 {
+        color: #4f46e5 !important;
+        text-shadow: 0 0 15px rgba(99,102,241,0.4) !important;
+        font-size: 2.4rem !important; font-weight: 800 !important; letter-spacing: -0.5px; margin-bottom: 0.4rem !important; 
+    }
     h2 { font-weight: 700 !important; color: var(--th) !important; font-size: 1.3rem !important; border: none !important; padding: 0 !important; }
     h3 { font-weight: 600 !important; color: var(--th) !important; font-size: 1rem !important; }
     p { color: var(--tb); line-height: 1.7; }
@@ -71,29 +80,29 @@ def local_css():
         font-weight: 800;
     }
 
+    /* GLASS EFFECT FOR CARDS */
+    [data-testid="stVerticalBlock"] > div {
+        background: rgba(255, 255, 255, 0.35) !important;
+        backdrop-filter: blur(25px) !important;
+        -webkit-backdrop-filter: blur(25px) !important;
+        border-radius: 20px;
+        padding: 20px;
+        box-shadow: 0 8px 32px rgba(31, 38, 135, 0.2);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
     /* Cards - Glassmorphism */
     .nm-card { 
-        background: var(--glass-bg); 
+        background: transparent; /* rely on vertical block */
         border-radius: 20px; 
-        padding: 1.8rem 2rem; 
+        padding: 0.5rem; 
         margin-bottom: 1.2rem; 
-        box-shadow: var(--glass-shadow); 
-        backdrop-filter: blur(20px);
-        -webkit-backdrop-filter: blur(20px);
-        border: 1px solid var(--glass-border);
-        border-top: 1px solid rgba(255,255,255,1);
-        border-left: 1px solid rgba(255,255,255,1);
-        transition: transform .3s ease, box-shadow .3s ease; 
+        border: none;
     }
-    .nm-card:hover { transform: translateY(-4px); box-shadow: 0 20px 40px -10px rgba(168, 85, 247, 0.2); }
     
     .nm-sm { 
-        background: var(--glass-bg); 
-        border-radius: 16px; 
-        padding: 1.2rem 1.3rem; 
-        box-shadow: var(--glass-shadow); 
-        backdrop-filter: blur(20px);
-        border: 1px solid var(--glass-border);
+        background: transparent;
+        padding: 0.5rem; 
     }
     .nm-inset { 
         background: rgba(255, 255, 255, 0.3); 
@@ -117,56 +126,29 @@ def local_css():
     .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
 
     .feat-card { 
-        background: var(--glass-bg); border-radius: 18px; padding: 1.3rem; 
-        box-shadow: var(--glass-shadow); backdrop-filter: blur(16px);
-        border: 1px solid var(--glass-border); transition: all .3s ease; 
+        background: transparent; padding: 0.5rem;
     }
-    .feat-card:hover { box-shadow: 0 15px 35px -10px rgba(99, 102, 241, 0.2); transform: translateY(-4px); }
     .feat-icon { width: 44px; height: 44px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 20px; margin-bottom: 0.75rem; box-shadow: 0 4px 15px rgba(99, 102, 241, 0.15); background: #ffffff; }
 
-    /* Buttons */
-    .stButton>button { 
-        background: rgba(255, 255, 255, 0.7) !important; 
-        color: var(--primary) !important; 
-        border: 1px solid rgba(255, 255, 255, 1) !important; 
-        border-radius: 50px !important; 
-        padding: 0.65rem 1.6rem !important; 
+    /* BUTTON GLOW */
+    .stButton>button, [data-testid="stFormSubmitButton"]>button {
+        background: linear-gradient(135deg, #6366f1, #a855f7) !important;
+        color: white !important;
+        border-radius: 15px !important;
+        border: none !important;
+        box-shadow: 0 4px 20px rgba(99,102,241,0.5) !important;
+        transition: 0.3s !important;
         font-family: 'Nunito', sans-serif !important; 
         font-weight: 700 !important; font-size: 0.95rem !important; 
-        box-shadow: 0 8px 20px rgba(99, 102, 241, 0.1) !important; 
-        backdrop-filter: blur(12px); transition: all .3s ease !important; width: 100%; 
-    }
-    .stButton>button:hover { 
-        box-shadow: 0 12px 25px rgba(168, 85, 247, 0.2) !important; 
-        background: #ffffff !important; 
-        transform: translateY(-2px); 
-    }
-    .stButton>button:active { transform: translateY(0); }
-
-    /* Primary CTA */
-    .cta-btn>button { 
-        background: var(--grad) !important; 
-        color: #fff !important; border: none !important;
-        box-shadow: 0 8px 25px rgba(168, 85, 247, 0.4) !important; 
-    }
-    .cta-btn>button:hover { 
-        background: linear-gradient(135deg, #7c7eff 0%, #bd73fa 100%) !important; 
-        box-shadow: 0 12px 30px rgba(168, 85, 247, 0.6) !important; 
-        color: #fff !important; 
-        transform: translateY(-2px); 
+        padding: 0.65rem 1.6rem !important; width: 100%;
+        backdrop-filter: blur(12px); 
     }
 
-    /* Submit Button */
-    [data-testid="stFormSubmitButton"]>button { 
-        background: var(--grad) !important; 
-        color: #fff !important; border: none !important; border-radius: 50px !important; 
-        font-weight: 700 !important; font-size: 0.95rem !important; padding: 0.7rem 2rem !important; 
-        box-shadow: 0 8px 25px rgba(168, 85, 247, 0.4) !important; width: 100%; transition: all .3s ease !important; 
+    .stButton>button:hover, [data-testid="stFormSubmitButton"]>button:hover {
+        transform: translateY(-3px) !important;
+        box-shadow: 0 6px 25px rgba(168,85,247,0.6) !important;
     }
-    [data-testid="stFormSubmitButton"]>button:hover { 
-        box-shadow: 0 12px 30px rgba(168, 85, 247, 0.6) !important; 
-        transform: translateY(-2px); 
-    }
+    .stButton>button:active { transform: translateY(0) !important; }
 
     /* Inputs */
     .stTextInput>div>div>input, .stNumberInput>div>div>input, .stSelectbox>div>div, .stTextArea textarea {
