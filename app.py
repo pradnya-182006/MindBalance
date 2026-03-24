@@ -546,11 +546,11 @@ elif menu == "Psychological Assessment":
         st.markdown("<span class='sec-label'>Score Breakdown by Dimension</span>", unsafe_allow_html=True)
         qs   = ["Preoccupation","Tolerance","Mood Mod.","Relapse","Withdrawal","Conflict"]
         vals = [q1,q2,q3,q4,q5,q6]
-        fig2 = go.Figure(go.Bar(x=qs, y=vals, width=0.5, borderwidth=0,
-            marker_color=[color if v>=4 else '#604e9c' if v==3 else 'rgba(110,100,160,0.2)' for v in vals]))
+        fig2 = go.Figure(go.Bar(x=qs, y=vals, width=0.5, marker_line_width=0,
+            marker_color=[color if v>=4 else '#6366f1' if v==3 else 'rgba(148,163,184,0.3)' for v in vals]))
         fig2.update_layout(**NM, height=220,
-            yaxis=dict(range=[0,5],tickvals=[1,2,3,4,5],gridcolor='#d4d8e0'),
-            xaxis=dict(tickfont=dict(size=11,color='#9aa0bc')), showlegend=False)
+            yaxis=dict(range=[0,5],tickvals=[1,2,3,4,5],gridcolor='#e2e8f0'),
+            xaxis=dict(tickfont=dict(size=11,color='#94a3b8')), showlegend=False)
         st.plotly_chart(fig2, use_container_width=True)
 
 
