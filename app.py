@@ -8,6 +8,7 @@ from datetime import datetime
 import json
 import os
 import subprocess
+import streamlit.components.v1 as components
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -270,6 +271,97 @@ def local_css():
     ::-webkit-scrollbar-thumb { background: rgba(99, 102, 241, 0.3); border-radius: 10px; }
     ::-webkit-scrollbar-thumb:hover { background: rgba(168, 85, 247, 0.6); }
     .js-plotly-plot .plotly .bg { fill: transparent !important; }
+
+    /* ─── Behavioral badge ───────────────────────── */
+    .beh-badge {
+        display: inline-flex; align-items: center; gap: 8px;
+        background: rgba(255,255,255,0.8);
+        border-radius: 50px; padding: 0.35rem 0.9rem;
+        border: 1px solid rgba(255,255,255,0.9);
+        font-size: 0.76rem; font-weight: 700; color: var(--th);
+        box-shadow: 0 4px 12px rgba(99,102,241,0.07);
+    }
+
+    /* ─── Quick Intake ───────────────────────────── */
+    .intake-q {
+        background: rgba(255,255,255,0.5);
+        border-radius: 14px; padding: 0.9rem 1.1rem;
+        margin-bottom: 0.5rem;
+        border: 1px solid rgba(255,255,255,0.8);
+        display: flex; align-items: flex-start; gap: 12px;
+    }
+    .intake-icon {
+        width: 36px; height: 36px; border-radius: 11px;
+        background: linear-gradient(135deg,#eef2ff,#f3e8ff);
+        display: flex; align-items:center; justify-content:center;
+        font-size: 17px; flex-shrink: 0;
+        border: 1px solid rgba(255,255,255,0.9);
+        margin-top: 2px;
+    }
+
+    /* ─── Emoji Feedback ─────────────────────────── */
+    .feedback-wrap {
+        background: var(--glass-bg);
+        border-radius: 20px; padding: 2rem 2.2rem;
+        margin-top: 1.8rem;
+        box-shadow: var(--glass-shadow); backdrop-filter: blur(20px);
+        border: 1px solid var(--glass-border);
+        border-top: 1px solid rgba(255,255,255,1);
+    }
+    .emoji-satisfaction-row {
+        display: flex; justify-content: space-between;
+        align-items: stretch; gap: 10px;
+        margin: 1.2rem 0 0.8rem;
+    }
+    .emoji-sat-card {
+        flex: 1; display: flex; flex-direction: column;
+        align-items: center; justify-content: space-between;
+        gap: 8px; padding: 1rem 0.5rem;
+        border-radius: 16px; cursor: pointer;
+        border: 2px solid rgba(255,255,255,0.7);
+        background: rgba(255,255,255,0.35);
+        transition: all 0.25s cubic-bezier(0.34,1.56,0.64,1);
+        min-width: 0;
+    }
+    .emoji-sat-card:hover {
+        background: rgba(255,255,255,0.75);
+        border-color: rgba(99,102,241,0.25);
+        transform: translateY(-6px);
+        box-shadow: 0 14px 30px rgba(99,102,241,0.12);
+    }
+    .emoji-sat-card.active {
+        background: rgba(255,255,255,0.95);
+        border-color: var(--primary);
+        transform: translateY(-6px);
+        box-shadow: 0 14px 30px rgba(99,102,241,0.18);
+    }
+    .emoji-sat-face {
+        font-size: 2.5rem; line-height: 1;
+        filter: grayscale(40%);
+        transition: all 0.2s ease;
+    }
+    .emoji-sat-card:hover .emoji-sat-face,
+    .emoji-sat-card.active .emoji-sat-face {
+        filter: grayscale(0%);
+        transform: scale(1.18);
+    }
+    .emoji-sat-label {
+        font-size: 0.66rem; font-weight: 700;
+        color: #94a3b8; text-align: center; line-height: 1.35;
+        text-transform: uppercase; letter-spacing: 0.4px;
+    }
+    .emoji-sat-card.active .emoji-sat-label { color: var(--primary); }
+    .sat-radio-dot {
+        width: 16px; height: 16px; border-radius: 50%;
+        border: 2px solid rgba(148,163,184,0.4);
+        background: rgba(255,255,255,0.8);
+        transition: all 0.2s;
+    }
+    .emoji-sat-card.active .sat-radio-dot {
+        background: var(--primary);
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(99,102,241,0.2);
+    }
     </style>
     """, unsafe_allow_html=True)
 
@@ -313,6 +405,8 @@ NM = dict(paper_bgcolor='rgba(0,0,0,0)',plot_bgcolor='rgba(0,0,0,0)',
 PAGES = ["Home","Psychological Assessment","Dataset Insights","Screen Time Controller"]
 ICONS = ["⊙","◈","◎","◉"]
 if 'menu' not in st.session_state: st.session_state.menu = "Home"
+if 'feedback_submitted' not in st.session_state: st.session_state.feedback_submitted = False
+if 'fb_val' not in st.session_state: st.session_state.fb_val = 3
 
 # ── SIDEBAR ───────────────────────────────────
 with st.sidebar:
@@ -462,9 +556,114 @@ elif menu == "Psychological Assessment":
     st.markdown("""
         <h1>Clinical <span class='highlight-text'>Assessment</span></h1>
         <p style='color:#9aa0bc;font-size:0.88rem;margin-top:-0.5rem;margin-bottom:1.5rem;'>
-        Bergen Social Media Addiction Scale (BSMAS) — validated 6-item psychometric tool.
+        Bergen Social Media Addiction Scale · Quick Intake · Behavioral Analysis
         </p>
     """, unsafe_allow_html=True)
+
+    # ── BEHAVIORAL TRACKER ─────────────────────────
+    # Passive JS tracking: session time, scroll depth, click count, idle detection
+    components.html("""
+    <script>
+    (function(){
+        var t0 = Date.now(), clicks = 0, maxScroll = 0, lastAct = Date.now(), scrollBuf = [];
+        document.addEventListener('click', function(){ clicks++; lastAct = Date.now(); });
+        window.addEventListener('scroll', function(){
+            lastAct = Date.now();
+            var pct = Math.round((window.scrollY / Math.max(1, document.body.scrollHeight - window.innerHeight)) * 100);
+            if(pct > maxScroll) maxScroll = pct;
+            scrollBuf.push(Date.now());
+            if(scrollBuf.length > 50) scrollBuf.shift();
+        });
+        ['mousemove','keypress','touchstart'].forEach(function(e){
+            document.addEventListener(e, function(){ lastAct = Date.now(); });
+        });
+        setInterval(function(){
+            var elapsed = Math.round((Date.now()-t0)/1000);
+            var idle    = Math.round((Date.now()-lastAct)/1000);
+            var recentScrolls = scrollBuf.filter(function(s){ return Date.now()-s < 8000; }).length;
+            var score = 0;
+            if(elapsed > 90)         score += 20;
+            if(clicks  > 12)         score += 20;
+            if(maxScroll > 65)       score += 20;
+            if(recentScrolls > 6)    score += 20;
+            if(idle < 4 && elapsed > 20) score += 20;
+            try {
+                sessionStorage.setItem('mb_beh', JSON.stringify({
+                    score: score, clicks: clicks,
+                    scroll: maxScroll, secs: elapsed
+                }));
+            } catch(e){}
+        }, 4000);
+    })();
+    </script>
+    """, height=0)
+
+    # ══ STEP 1 — QUICK INTAKE ═══════════════════════
+    st.markdown("""
+        <div class='nm-card'>
+            <span class='sec-label'>Step 1 · Quick Self-Report</span>
+            <p style='font-size:0.84rem;color:#9aa0bc;margin:-0.2rem 0 1.1rem;'>
+            3 quick questions before the clinical scale — takes under 30 seconds.
+            </p>
+    """, unsafe_allow_html=True)
+
+    qi_a, qi_b, qi_c = st.columns(3, gap="medium")
+    with qi_a:
+        st.markdown("""<div class='intake-q'>
+            <div class='intake-icon'>📱</div>
+            <div><p style='font-size:0.68rem;font-weight:700;color:#9aa0bc;text-transform:uppercase;letter-spacing:0.8px;margin:0 0 3px;'>Daily Hours</p>
+            <p style='font-size:0.81rem;color:#4b3e7c;font-weight:600;margin:0;'>How many hours on social media per day?</p></div>
+        </div>""", unsafe_allow_html=True)
+        intake_hours = st.select_slider(
+            "Daily hours on social media",
+            options=["< 1h","1 – 2h","2 – 4h","4 – 6h","6 – 8h","8h+"],
+            value="2 – 4h", label_visibility="collapsed"
+        )
+
+    with qi_b:
+        st.markdown("""<div class='intake-q'>
+            <div class='intake-icon'>🌅</div>
+            <div><p style='font-size:0.68rem;font-weight:700;color:#9aa0bc;text-transform:uppercase;letter-spacing:0.8px;margin:0 0 3px;'>Morning Habit</p>
+            <p style='font-size:0.81rem;color:#4b3e7c;font-weight:600;margin:0;'>Do you check your phone right after waking up?</p></div>
+        </div>""", unsafe_allow_html=True)
+        intake_morning = st.radio(
+            "Morning check habit",
+            ["Yes, always","Sometimes","Rarely","Never"],
+            index=1, label_visibility="collapsed"
+        )
+
+    with qi_c:
+        st.markdown("""<div class='intake-q'>
+            <div class='intake-icon'>🔁</div>
+            <div><p style='font-size:0.68rem;font-weight:700;color:#9aa0bc;text-transform:uppercase;letter-spacing:0.8px;margin:0 0 3px;'>Check Frequency</p>
+            <p style='font-size:0.81rem;color:#4b3e7c;font-weight:600;margin:0;'>How often do you check social media per hour?</p></div>
+        </div>""", unsafe_allow_html=True)
+        intake_freq = st.radio(
+            "Checks per hour",
+            ["1 – 2 times","3 – 5 times","5 – 10 times","10+ times"],
+            index=1, label_visibility="collapsed"
+        )
+
+    # Intake score
+    hour_risk    = {"< 1h":0,"1 – 2h":1,"2 – 4h":2,"4 – 6h":3,"6 – 8h":4,"8h+":5}[intake_hours]
+    morning_risk = {"Yes, always":3,"Sometimes":2,"Rarely":1,"Never":0}[intake_morning]
+    freq_risk    = {"1 – 2 times":0,"3 – 5 times":1,"5 – 10 times":2,"10+ times":3}[intake_freq]
+    intake_score = hour_risk + morning_risk + freq_risk
+    intake_clr   = "#2bb996" if intake_score<=3 else "#e9a147" if intake_score<=6 else "#ee5e76"
+    intake_lbl   = "Low Signal" if intake_score<=3 else "Moderate Signal" if intake_score<=6 else "High Signal"
+
+    st.markdown(f"""
+        <div style='display:flex;align-items:center;gap:10px;margin-top:0.3rem;'>
+            <span style='font-size:0.7rem;color:#9aa0bc;font-weight:700;text-transform:uppercase;letter-spacing:1px;'>Intake signal →</span>
+            <span class='beh-badge'>
+                <span style='width:8px;height:8px;border-radius:50%;background:{intake_clr};display:inline-block;'></span>
+                <span style='color:{intake_clr};'>{intake_lbl} &nbsp;({intake_score}/11)</span>
+            </span>
+        </div>
+    """, unsafe_allow_html=True)
+    st.markdown("</div>", unsafe_allow_html=True)
+
+    st.markdown("<br>", unsafe_allow_html=True)
 
     with st.form("assessment"):
         st.markdown("<div class='nm-card'>", unsafe_allow_html=True)
@@ -504,22 +703,29 @@ elif menu == "Psychological Assessment":
         submit = st.form_submit_button("⟶  Generate AI Risk Report")
 
     if submit:
-        total = q1+q2+q3+q4+q5+q6
+        st.session_state.feedback_submitted = False  # Reset feedback on new submission
+        total    = q1+q2+q3+q4+q5+q6
         label,color,advice,cures = get_bsmas_result(total)
         severity  = "LOW" if total<=12 else "MODERATE" if total<=18 else "HIGH" if total<=24 else "SEVERE"
         badge_cls = "badge-l" if total<=12 else "badge-m" if total<=18 else "badge-h"
+        composite = round(total + intake_score * 0.5, 1)
 
         st.markdown(f"""
             <div class='nm-card' style='border-left:5px solid {color};margin-top:1.5rem;'>
-                <div style='display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;'>
+                <div style='display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;'>
                     <div>
                         <span class='sec-label' style='color:{color};'>Assessment Result</span>
                         <h2 style='margin:0;color:{color};font-size:1.6rem;font-weight:800;'>{label}</h2>
-                        <p style='margin:5px 0 0;font-size:0.95rem;color:#6a6287;'>{advice}</p>
+                        <p style='margin:5px 0 10px;font-size:0.93rem;color:#6a6287;'>{advice}</p>
+                        <div style='display:flex;gap:7px;flex-wrap:wrap;'>
+                            <span class='beh-badge'>📱 Intake {intake_score}/11</span>
+                            <span class='beh-badge'>🧠 BSMAS {total}/30</span>
+                            <span class='beh-badge'>📊 Composite {composite}</span>
+                        </div>
                     </div>
                     <div style='text-align:right;'>
                         <span class='badge {badge_cls}'>{severity} RISK</span>
-                        <p style='margin:6px 0 0;font-family:DM Mono,monospace;font-size:2.4rem;font-weight:700;color:{color};'>
+                        <p style='margin:8px 0 0;font-family:DM Mono,monospace;font-size:2.4rem;font-weight:700;color:{color};'>
                             {total}<span style='font-size:1rem;color:#9aa0bc;'>/30</span>
                         </p>
                     </div>
@@ -541,8 +747,7 @@ elif menu == "Psychological Assessment":
         r1,r2 = st.columns(2, gap="medium")
         with r1:
             fig = go.Figure(go.Indicator(
-                mode="gauge+number",
-                value=round(gauge_val,1),
+                mode="gauge+number", value=round(gauge_val,1),
                 number={'suffix':'%','font':{'color':color,'family':'DM Mono','size':38}},
                 title={'text':"Clinical Risk Index",'font':{'color':'#9aa0bc','size':12}},
                 gauge={'axis':{'range':[0,100],'tickcolor':'#9aa0bc','tickfont':{'color':'#9aa0bc','size':10}},
@@ -553,21 +758,15 @@ elif menu == "Psychological Assessment":
             fig.update_layout(**NM, height=280)
             st.plotly_chart(fig, use_container_width=True)
 
-        cure_html = ''.join([f"""<div style='display:flex;align-items:flex-start;gap:12px;
-                        padding:0.7rem 1rem;border-radius:14px;margin-bottom:10px;
-                        background:rgba(255,255,255,0.3);border:1px solid rgba(255,255,255,0.6);
-                        box-shadow:0 4px 12px rgba(110,100,160,0.03);'>
-                        <span style='color:{color};font-size:1rem;margin-top:1px;flex-shrink:0;font-weight:900;'>✓</span>
-                        <span style='color:#4b3e7c;font-size:0.88rem;line-height:1.5;font-weight:600;'>{c}</span>
-                    </div>""" for c in cures])
-        
+        cure_html = ''.join([f"""
+            <div style='display:flex;align-items:flex-start;gap:12px;padding:0.7rem 1rem;border-radius:14px;
+                        margin-bottom:10px;background:rgba(255,255,255,0.3);border:1px solid rgba(255,255,255,0.6);'>
+                <span style='color:{color};font-size:1rem;margin-top:1px;flex-shrink:0;font-weight:900;'>✓</span>
+                <span style='color:#4b3e7c;font-size:0.88rem;line-height:1.5;font-weight:600;'>{c}</span>
+            </div>""" for c in cures])
         with r2:
-            st.markdown(f"""
-                <div class='nm-card' style='height:100%;'>
-                    <span class='sec-label'>Cure</span>
-                    {cure_html}
-                </div>
-            """, unsafe_allow_html=True)
+            st.markdown(f"""<div class='nm-card' style='height:100%;'>
+                <span class='sec-label'>Recommended Actions</span>{cure_html}</div>""", unsafe_allow_html=True)
 
         st.markdown("<br>", unsafe_allow_html=True)
         st.markdown("<span class='sec-label'>Score Breakdown by Dimension</span>", unsafe_allow_html=True)
@@ -579,6 +778,169 @@ elif menu == "Psychological Assessment":
             yaxis=dict(range=[0,5],tickvals=[1,2,3,4,5],gridcolor='#e2e8f0'),
             xaxis=dict(tickfont=dict(size=11,color='#94a3b8')), showlegend=False)
         st.plotly_chart(fig2, use_container_width=True)
+
+        # Behavioral pattern signals
+        st.markdown("<span class='sec-label'>Behavioral Pattern Signals</span>", unsafe_allow_html=True)
+        signals = []
+        if intake_morning == "Yes, always":
+            signals.append(("🌅","Morning check habit","#ee5e76","Compulsive wake-up behavior — strong dependency indicator."))
+        if intake_hours in ["6 – 8h","8h+"]:
+            signals.append(("⏱️","Extreme daily usage","#d96b6b",f"Self-reported {intake_hours}/day exceeds clinical thresholds."))
+        if intake_freq in ["5 – 10 times","10+ times"]:
+            signals.append(("🔁","Compulsive check frequency","#e9a147",f"Checking {intake_freq}/hour signals tolerance-building."))
+        if q3 >= 4:
+            signals.append(("🏃","Escapism confirmed","#d99a2e","Using social media to avoid real-life problems."))
+        if q5 >= 4:
+            signals.append(("😰","Withdrawal symptoms","#ee5e76","Restlessness without social media — dependency marker."))
+        if not signals:
+            signals.append(("✅","No critical flags","#2bb996","Intake and behavioral patterns appear healthy."))
+
+        sig_cols = st.columns(min(len(signals),3), gap="medium")
+        for i,(icon,title_s,clr,desc) in enumerate(signals[:3]):
+            with sig_cols[i]:
+                st.markdown(f"""
+                    <div class='nm-sm' style='border-left:3px solid {clr};'>
+                        <div style='display:flex;align-items:center;gap:8px;margin-bottom:5px;'>
+                            <span style='font-size:1.1rem;'>{icon}</span>
+                            <span style='font-weight:700;font-size:0.82rem;color:{clr};'>{title_s}</span>
+                        </div>
+                        <p style='font-size:0.76rem;color:#6a6287;margin:0;line-height:1.5;'>{desc}</p>
+                    </div>
+                """, unsafe_allow_html=True)
+
+        # ══════════════════════════════════════════
+        #  EMOJI SATISFACTION FEEDBACK FORM
+        # ══════════════════════════════════════════
+        st.markdown("<br>", unsafe_allow_html=True)
+
+        RATINGS = [
+            ("😡", "Highly\nUnsatisfied", 1, "#ee5e76"),
+            ("😞", "Unsatisfied",         2, "#f97316"),
+            ("😐", "Neutral",             3, "#94a3b8"),
+            ("😊", "Satisfied",           4, "#4aaa88"),
+            ("😄", "Very\nSatisfied",     5, "#2bb996"),
+        ]
+
+        if not st.session_state.feedback_submitted:
+            st.markdown("""
+                <div class='feedback-wrap'>
+                    <span class='sec-label'>Rate Your Experience</span>
+                    <p style='font-size:0.9rem;font-weight:700;color:#4b3e7c;margin:-0.2rem 0 0;'>
+                        Please rate your satisfaction with this Assessment:
+                    </p>
+            """, unsafe_allow_html=True)
+
+            # Emoji row (visual display — selection via Streamlit radio below)
+            cur = st.session_state.fb_val
+            cards_html = '<div class="emoji-satisfaction-row">'
+            for emoji, lbl, val, clr in RATINGS:
+                active = "active" if cur == val else ""
+                lbl_safe = lbl.replace('\n','<br>')
+                cards_html += f"""
+                    <div class="emoji-sat-card {active}">
+                        <div class="emoji-sat-face">{emoji}</div>
+                        <div class="emoji-sat-label">{lbl_safe}</div>
+                        <div class="sat-radio-dot"></div>
+                    </div>"""
+            cards_html += '</div>'
+            st.markdown(cards_html, unsafe_allow_html=True)
+
+            # Functional Streamlit radio (shown below the emoji row)
+            st.markdown("""
+                <p style='font-size:0.72rem;color:#9aa0bc;font-weight:600;letter-spacing:0.8px;
+                           text-transform:uppercase;margin:0.5rem 0 0.2rem;'>Select rating:</p>
+            """, unsafe_allow_html=True)
+            fb_choice = st.radio(
+                "Satisfaction",
+                options=[f"{e} {l.replace(chr(10),' ')}" for e,l,v,c in RATINGS],
+                index=cur - 1,
+                horizontal=True,
+                label_visibility="collapsed",
+                key="fb_radio_key"
+            )
+            # Sync selection
+            for e,l,v,c in RATINGS:
+                if fb_choice.startswith(e):
+                    st.session_state.fb_val = v
+                    break
+
+            # Show selected state pill
+            sel = next((r for r in RATINGS if r[2]==st.session_state.fb_val), RATINGS[2])
+            st.markdown(f"""
+                <div style='display:flex;align-items:center;gap:10px;margin:0.6rem 0;
+                            padding:0.65rem 1.1rem;border-radius:12px;
+                            background:rgba(255,255,255,0.55);border:1px solid rgba(255,255,255,0.8);'>
+                    <span style='font-size:1.4rem;'>{sel[0]}</span>
+                    <span style='font-weight:700;color:{sel[3]};font-size:0.9rem;'>
+                        {sel[1].replace(chr(10),' ')} selected
+                    </span>
+                    <span style='margin-left:auto;font-size:0.75rem;color:#9aa0bc;'>Click Submit to confirm →</span>
+                </div>
+            """, unsafe_allow_html=True)
+
+            fb_comment = st.text_area(
+                "Additional Comments (optional)",
+                placeholder="Tell us how we can improve — any feedback helps!",
+                height=76, key="fb_comment_key"
+            )
+            st.markdown("</div>", unsafe_allow_html=True)
+
+            fb_c1, fb_c2 = st.columns([1, 3])
+            with fb_c1:
+                st.markdown('<div class="cta-btn">', unsafe_allow_html=True)
+                if st.button("Submit Feedback  ✓", key="fb_submit_btn"):
+                    fb_path = os.path.join(BASE_DIR, 'feedback_log.json')
+                    entry = {
+                        "timestamp": datetime.now().isoformat(),
+                        "rating": st.session_state.fb_val,
+                        "rating_label": sel[1].replace('\n',' '),
+                        "comment": st.session_state.get("fb_comment_key",""),
+                        "bsmas_score": total,
+                        "severity": severity,
+                    }
+                    try:
+                        existing = []
+                        if os.path.exists(fb_path):
+                            with open(fb_path,'r') as f: existing = json.load(f)
+                        existing.append(entry)
+                        with open(fb_path,'w') as f: json.dump(existing, f, indent=2)
+                    except: pass
+                    st.session_state.feedback_submitted = True
+                    st.rerun()
+                st.markdown('</div>', unsafe_allow_html=True)
+
+        else:
+            # ── Thank-you card ──────────────────────────
+            sel = next((r for r in RATINGS if r[2]==st.session_state.fb_val), RATINGS[2])
+            stars = "⭐" * sel[2] + "☆" * (5 - sel[2])
+            thank_msgs = {
+                1: "We're sorry to hear that. Your feedback helps us improve significantly. 🙏",
+                2: "Thanks for the honest feedback — we'll work on it.",
+                3: "Appreciate your balanced take! More improvements are coming.",
+                4: "Really glad it was helpful! Share with classmates who might benefit.",
+                5: "Awesome! Thank you so much — this motivates the whole team. 🎉"
+            }
+            st.markdown(f"""
+                <div class='feedback-wrap' style='text-align:center;padding:2.5rem 2rem;'>
+                    <div style='font-size:3.5rem;margin-bottom:0.4rem;'>{sel[0]}</div>
+                    <p style='font-family:DM Mono,monospace;font-size:1.2rem;font-weight:700;color:#4b3e7c;margin:0;'>{stars}</p>
+                    <p style='font-weight:800;font-size:1.1rem;color:{sel[3]};margin:10px 0 6px;'>
+                        {sel[1].replace(chr(10),' ')}
+                    </p>
+                    <p style='font-size:0.86rem;color:#6a6287;margin:0;'>{thank_msgs[sel[2]]}</p>
+                    <div style='margin-top:1.2rem;'>
+                        <span class='stat-pill'>
+                            <span class='dot' style='background:#2bb996;'></span>
+                            Feedback recorded — thank you!
+                        </span>
+                    </div>
+                </div>
+            """, unsafe_allow_html=True)
+
+            if st.button("← Retake Assessment", key="retake_btn"):
+                st.session_state.feedback_submitted = False
+                st.session_state.fb_val = 3
+                st.rerun()
 
 
 # ── INSIGHTS ─────────────────────────────────
