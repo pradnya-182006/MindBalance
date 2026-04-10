@@ -199,8 +199,8 @@ The app will open at `http://localhost:8501`
 
 | Metric | Score |
 |--------|-------|
-| Accuracy | ~88% |
-| F1 Score (weighted) | ~0.87 |
+| Accuracy | **99.1%** |
+| F1 Score (weighted) | **0.99** |
 | Cross-Validation | 5-fold CV |
 
 > *Exact scores may vary based on train-test split seed.*
@@ -217,12 +217,18 @@ The app will open at `http://localhost:8501`
 
 ---
 
-## Author
+## Developers
 
 **Pradnya Maruti Ghokshe**
 B.Tech — AI and Data Science | NMIET, Pune
 
-[![LinkedIn](https://img.shields.io/badge/LinkedIn-Connect-blue?style=flat-square&logo=linkedin)](https://www.linkedin.com/in/pradnya-ghokshe-40364b3b7/)
+**Sanket Khobre**
+B.Tech — AI and Data Science | NMIET, Pune
+
+**Prachi Shinde**
+B.Tech — AI and Data Science | NMIET, Pune
+
+[![LinkedIn](https://img.shields.io/badge/LinkedIn-Connect-blue?style=flat-square&logo=linkedin)](https://www.linkedin.com/in/pradnya-ghokshe-40364b3b7/) 
 [![GitHub](https://img.shields.io/badge/GitHub-Follow-black?style=flat-square&logo=github)](https://github.com/pradnya-182006)
 
 ---

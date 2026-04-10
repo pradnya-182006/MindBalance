@@ -9,7 +9,12 @@ from xgboost import XGBClassifier
 from sklearn.metrics import accuracy_score, classification_report
 
 # Load data
-df = pd.read_csv('social_media_addiction_data.csv')
+try:
+    df = pd.read_csv('social_media_addiction_data.csv')
+except Exception as e:
+    print("❌ ERROR: Could not load 'social_media_addiction_data.csv'.")
+    print("Please make sure the file exists in the same directory as this script.")
+    exit(1)
 
 # Define features and target
 # We'll predict 'Status' (High Risk vs Low Risk)
