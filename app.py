@@ -799,14 +799,15 @@ elif menu == "Psychological Assessment":
             fig_rad = go.Figure()
             for i, (val, lbl, clr) in enumerate(zip(radial_vals, radial_labels, radial_colors)):
                 fig_rad.add_trace(go.Barpolar(
-                    r=[val],
+                    r=[i + 1], # Assign each ring to a unique radius (concentric)
                     theta=[0],
-                    width=[360 * (val/5)], # Percentage of circle
+                    width=[max(1, 360 * (val/5))], # Arc length based on score
                     marker_color=clr,
                     marker_line_width=0,
                     name=lbl,
                     hoverinfo='name+r'
                 ))
+
 
             fig_rad.update_layout(
                 polar=dict(
