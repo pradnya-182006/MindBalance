@@ -892,7 +892,7 @@ elif menu == "Psychological Assessment":
                 z=z_data,
                 x=['Light Usage', 'Moderate', 'Heavy'],
                 y=['Healthy Sleep', 'Disturbed', 'Sleep-Deprived'],
-                colorscale=[[0, '#2bb99615'], [0.5, '#e9a14715'], [1, '#ee5e7615']],
+                colorscale=[[0, 'rgba(43, 185, 150, 0.1)'], [0.5, 'rgba(233, 161, 71, 0.1)'], [1, 'rgba(238, 94, 118, 0.1)']],
                 showscale=False
             ))
             fig_heat.add_trace(go.Scatter(
