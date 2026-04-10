@@ -784,6 +784,53 @@ elif menu == "Psychological Assessment":
 
 
 
+        st.markdown("<br>", unsafe_allow_html=True)
+        g1, g2 = st.columns(2, gap="medium")
+        
+        with g1:
+            # Graph 1: Dynamic Impact Pie Chart (visual change on high risk)
+            st.markdown("<span class='sec-label'>Addiction Impact Share</span>", unsafe_allow_html=True)
+            impact_val = total
+            stability_val = max(5, 31 - total) # Slight buffer for visual
+            pie_color = '#ee5e76' if total > 20 else '#e9a147' if total > 12 else '#2bb996'
+            
+            fig_pie = go.Figure(data=[go.Pie(
+                labels=['Risk Weight', 'Healthy Margin'],
+                values=[impact_val, stability_val],
+                hole=.7,
+                marker=dict(colors=[pie_color, 'rgba(148,163,184,0.1)']),
+                textinfo='none'
+            )])
+            fig_pie.update_layout(**NM, height=220, showlegend=False)
+            st.plotly_chart(fig_pie, use_container_width=True)
+            st.markdown(f"<p style='text-align:center; font-size:0.75rem; color:{pie_color}; font-weight:700; margin-top:-10px;'>{'⚠️ Critical' if total > 20 else '⚡ Moderate' if total > 12 else '✅ Safe'}</p>", unsafe_allow_html=True)
+
+        with g2:
+            # Graph 2: Dynamic Comparison Bar Chart (visual change on high risk)
+            st.markdown("<span class='sec-label'>Risk vs Wellbeing Index</span>", unsafe_allow_html=True)
+            wellbeing_val = max(2, 31 - total)
+            
+            fig_bar = go.Figure()
+            fig_bar.add_trace(go.Bar(
+                name='Active Risk',
+                x=['Status'], y=[total],
+                marker_color='#ee5e76' if total > 18 else '#3b82f6',
+                width=0.4
+            ))
+            fig_bar.add_trace(go.Bar(
+                name='Inner Wellbeing',
+                x=['Status'], y=[wellbeing_val],
+                marker_color='#10b981',
+                width=0.4
+            ))
+            
+            fig_bar.update_layout(
+                **NM, height=220, barmode='group',
+                yaxis=dict(range=[0, 32], gridcolor='rgba(148,163,184,0.05)'),
+                showlegend=True, legend=dict(font=dict(size=8), orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
+            )
+            st.plotly_chart(fig_bar, use_container_width=True)
+
         # ══════════════════════════════════════════
         #  IMPROVED CLICKABLE FEEDBACK SYSTEM
         # ══════════════════════════════════════════
