@@ -862,7 +862,46 @@ elif menu == "Psychological Assessment":
             )
             st.plotly_chart(fig_bar, use_container_width=True)
 
+        st.markdown("<br>", unsafe_allow_html=True)
+        row4_1, row4_2 = st.columns(2, gap="medium")
+        
+        with row4_1:
+            # Graph 5: Addiction Severity Funnel (Process of loss)
+            st.markdown("<span class='sec-label'>Impact Assessment Funnel</span>", unsafe_allow_html=True)
+            # Higher score = smaller bottom of funnel (choke point)
+            base_f = 100
+            f_vals = [base_f, max(10, base_f - (total*0.8)), max(5, base_f - (total*1.5)), max(2, base_f - (total*2.2))]
+            fig_funnel = go.Figure(go.Funnel(
+                y = ["Digital Potential", "Daily Focus", "Sleep Quality", "Mental Energy"],
+                x = f_vals,
+                textinfo = "value+percent initial",
+                marker = {"color": [color, color, color, color], "opacity": [0.8, 0.6, 0.4, 0.2]}
+            ))
+            fig_funnel.update_layout(**NM, height=260, showlegend=False)
+            st.plotly_chart(fig_funnel, use_container_width=True)
 
+        with row4_2:
+            # Graph 6: Risk Density Heatmap (Correlation)
+            st.markdown("<span class='sec-label'>Risk Distribution Heatmap</span>", unsafe_allow_html=True)
+            # Create a 3x3 matrix showing where the user sits
+            z_data = [[1, 2, 5], [2, 4, 8], [5, 8, 10]] 
+            u_y = 0 if q4 > 3 else 1 if q4 > 1.5 else 2 
+            u_x = 0 if usage < 4 else 1 if usage < 7 else 2 
+            
+            fig_heat = go.Figure(data=go.Heatmap(
+                z=z_data,
+                x=['Light Usage', 'Moderate', 'Heavy'],
+                y=['Healthy Sleep', 'Disturbed', 'Sleep-Deprived'],
+                colorscale=[[0, '#2bb99615'], [0.5, '#e9a14715'], [1, '#ee5e7615']],
+                showscale=False
+            ))
+            fig_heat.add_trace(go.Scatter(
+                x=[u_x], y=[u_y], mode='markers+text',
+                marker=dict(size=18, color=color, symbol='diamond', line=dict(width=2, color='white')),
+                text=["YOU"], textposition="top center", textfont=dict(size=10, weight='bold', color=color)
+            ))
+            fig_heat.update_layout(**NM, height=260)
+            st.plotly_chart(fig_heat, use_container_width=True)
 
         # ══════════════════════════════════════════
         #  IMPROVED CLICKABLE FEEDBACK SYSTEM
