@@ -780,69 +780,7 @@ elif menu == "Psychological Assessment":
                     </div>
                 """, unsafe_allow_html=True)
 
-        st.markdown("<br>", unsafe_allow_html=True)
-        row3_1, row3_2 = st.columns(2, gap="medium")
-        
-        with row3_1:
-            # New Graph 1: Risk Zone Intensity Meter (Linear Gauge)
-            st.markdown("<span class='sec-label'>Risk Intensity Meter</span>", unsafe_allow_html=True)
-            fig_meter = go.Figure(go.Indicator(
-                mode = "gauge+number",
-                value = total,
-                domain = {'x': [0, 1], 'y': [0, 1]},
-                number = {'font': {'size': 30, 'color': color}},
-                gauge = {
-                    'axis': {'range': [6, 30], 'tickwidth': 1, 'tickcolor': "#94a3b8"},
-                    'bar': {'color': color, 'thickness': 0.3},
-                    'bgcolor': "white",
-                    'borderwidth': 2,
-                    'bordercolor': "rgba(0,0,0,0.05)",
-                    'steps': [
-                        {'range': [6, 12], 'color': 'rgba(16, 185, 129, 0.1)'},
-                        {'range': [12, 18], 'color': 'rgba(245, 158, 11, 0.1)'},
-                        {'range': [18, 24], 'color': 'rgba(238, 94, 118, 0.1)'},
-                        {'range': [24, 30], 'color': 'rgba(184, 64, 64, 0.2)'}
-                    ],
-                    'threshold': {
-                        'line': {'color': "red", 'width': 4},
-                        'thickness': 0.75,
-                        'value': 24
-                    }
-                }
-            ))
-            fig_meter.update_layout(**NM, height=220)
-            st.plotly_chart(fig_meter, use_container_width=True)
 
-        with row3_2:
-            # New Graph 2: Dependency Impact Projection (Area Chart)
-            st.markdown("<span class='sec-label'>Risk Growth Projection</span>", unsafe_allow_html=True)
-            # Create a curve showing how risk typically grows with usage
-            x_range = np.linspace(0, 15, 20)
-            # base_risk + exponential growth
-            y_curve = 6 + (x_range**1.5) / 2
-            
-            fig_proj = go.Figure()
-            # Background area
-            fig_proj.add_trace(go.Scatter(
-                x=x_range, y=y_curve,
-                fill='tozeroy',
-                mode='lines',
-                line=dict(width=3, color=color),
-                fillcolor=f"rgba({int(color[1:3],16)}, {int(color[3:5],16)}, {int(color[5:7],16)}, 0.15)" if color.startswith('#') else "rgba(99,102,241,0.1)"
-            ))
-            # Highlight current user position
-            fig_proj.add_trace(go.Scatter(
-                x=[usage], y=[total],
-                mode='markers',
-                marker=dict(size=12, color=color, line=dict(width=3, color='white')),
-                name='You'
-            ))
-            fig_proj.update_layout(
-                **NM, height=220, showlegend=False,
-                xaxis=dict(title="Usage Hours", gridcolor='rgba(148,163,184,0.05)', title_font=dict(size=10)),
-                yaxis=dict(title="Score", gridcolor='rgba(148,163,184,0.05)', title_font=dict(size=10), range=[0, 32])
-            )
-            st.plotly_chart(fig_proj, use_container_width=True)
 
 
 
