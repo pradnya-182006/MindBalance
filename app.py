@@ -788,22 +788,38 @@ elif menu == "Psychological Assessment":
         g1, g2 = st.columns(2, gap="medium")
         
         with g1:
-            # Graph 1: Dynamic Impact Pie Chart (visual change on high risk)
-            st.markdown("<span class='sec-label'>Addiction Impact Share</span>", unsafe_allow_html=True)
-            impact_val = total
-            stability_val = max(5, 31 - total) # Slight buffer for visual
-            pie_color = '#ee5e76' if total > 20 else '#e9a147' if total > 12 else '#2bb996'
+            # Graph 1: Radial Dimension Intensity (Circular Bar Chart)
+            st.markdown("<span class='sec-label'>Dimension Intensity Profile</span>", unsafe_allow_html=True)
             
-            fig_pie = go.Figure(data=[go.Pie(
-                labels=['Risk Weight', 'Healthy Margin'],
-                values=[impact_val, stability_val],
-                hole=.7,
-                marker=dict(colors=[pie_color, 'rgba(148,163,184,0.1)']),
-                textinfo='none'
-            )])
-            fig_pie.update_layout(**NM, height=220, showlegend=False)
-            st.plotly_chart(fig_pie, use_container_width=True)
-            st.markdown(f"<p style='text-align:center; font-size:0.75rem; color:{pie_color}; font-weight:700; margin-top:-10px;'>{'⚠️ Critical' if total > 20 else '⚡ Moderate' if total > 12 else '✅ Safe'}</p>", unsafe_allow_html=True)
+            # Values for the 4 rings
+            radial_vals = [q1, q2, q3, q4]
+            radial_labels = ["Preoccupation", "Tolerance", "Mood Mod.", "Relapse"]
+            radial_colors = ['#7c3aed', '#6366f1', '#f59e0b', '#ee5e76']
+            
+            fig_rad = go.Figure()
+            for i, (val, lbl, clr) in enumerate(zip(radial_vals, radial_labels, radial_colors)):
+                fig_rad.add_trace(go.Barpolar(
+                    r=[val],
+                    theta=[0],
+                    width=[360 * (val/5)], # Percentage of circle
+                    marker_color=clr,
+                    marker_line_width=0,
+                    name=lbl,
+                    hoverinfo='name+r'
+                ))
+
+            fig_rad.update_layout(
+                polar=dict(
+                    hole=0.4,
+                    bgcolor='rgba(0,0,0,0)',
+                    radialaxis=dict(visible=False, range=[0, 5]),
+                    angularaxis=dict(visible=False)
+                ),
+                **NM, height=240, showlegend=True,
+                legend=dict(font=dict(size=8), orientation="h", yanchor="bottom", y=-0.1, xanchor="center", x=0.5)
+            )
+            st.plotly_chart(fig_rad, use_container_width=True)
+
 
         with g2:
             # Graph 2: Dynamic Comparison Bar Chart (visual change on high risk)
