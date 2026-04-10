@@ -843,12 +843,25 @@ elif menu == "Psychological Assessment":
             
             fig_bar.update_layout(
                 **NM, height=220,
-                xaxis=dict(tickfont=dict(size=11, color='#94a3b8')),
-                yaxis=dict(range=[0, 35], gridcolor='rgba(148,163,184,0.05)', showticklabels=False),
+                xaxis=dict(
+                    title="Metric Type",
+                    title_font=dict(size=10, color='#9aa0bc'),
+                    tickfont=dict(size=11, color='#94a3b8'),
+                    showline=True, linecolor='rgba(148,163,184,0.1)'
+                ),
+                yaxis=dict(
+                    title="Values (0-30)",
+                    title_font=dict(size=10, color='#9aa0bc'),
+                    range=[0, 35], 
+                    gridcolor='rgba(148,163,184,0.05)', 
+                    showticklabels=True,
+                    showline=True, linecolor='rgba(148,163,184,0.1)'
+                ),
                 showlegend=False,
-                bargap=0.4 # Professional gap between bars
+                bargap=0.4
             )
             st.plotly_chart(fig_bar, use_container_width=True)
+
 
 
         # ══════════════════════════════════════════
