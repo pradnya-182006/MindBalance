@@ -752,6 +752,57 @@ elif menu == "Psychological Assessment":
             xaxis=dict(tickfont=dict(size=11,color='#94a3b8')), showlegend=False)
         st.plotly_chart(fig2, use_container_width=True)
 
+        g1, g2 = st.columns(2, gap="medium")
+        with g1:
+            # Graph 1: BSMAS Radar Chart (Psychological Profile)
+            st.markdown("<span class='sec-label'>360° Psychological Profile</span>", unsafe_allow_html=True)
+            fig_radar = go.Figure(data=go.Scatterpolar(
+                r=[q1, q2, q3, q4, q5, q6],
+                theta=["Preoccupation","Tolerance","Mood Mod.","Relapse","Withdrawal","Conflict"],
+                fill='toself',
+                marker=dict(color=color),
+                line=dict(color=color, width=2)
+            ))
+            fig_radar.update_layout(
+                polar=dict(
+                    bgcolor='rgba(0,0,0,0)',
+                    radialaxis=dict(visible=True, range=[0, 5], gridcolor='rgba(148,163,184,0.1)', tickfont=dict(size=8)),
+                    angularaxis=dict(gridcolor='rgba(148,163,184,0.1)', tickfont=dict(size=9, color='#9aa0bc'))
+                ),
+                **NM, height=260, showlegend=False
+            )
+            st.plotly_chart(fig_radar, use_container_width=True)
+
+        with g2:
+            # Graph 2: Peer Benchmark Indicator
+            st.markdown("<span class='sec-label'>Peer Usage Benchmark</span>", unsafe_allow_html=True)
+            # Assuming 6.4h is the dataset average from previous stats
+            peer_avg = 6.4
+            diff = usage - peer_avg
+            fig_bench = go.Figure(go.Indicator(
+                mode="delta",
+                value=usage,
+                delta={'reference': peer_avg, 'relative': False, 'valueformat': '.1f', 
+                       'increasing': {'color': '#ee5e76'}, 'decreasing': {'color': '#2bb996'}},
+                title={'text': "vs Global Student Avg", 'font': {'size': 11, 'color': '#9aa0bc'}},
+                number={'suffix': "h", 'font': {'size': 28, 'color': color}}
+            ))
+            fig_bench.update_layout(**NM, height=220)
+            
+            # Simple advice text for benchmark
+            bench_msg = "Above average usage" if diff > 0 else "Lower than average usage"
+            bench_clr = "#ee5e76" if diff > 0 else "#2bb996"
+            
+            st.plotly_chart(fig_bench, use_container_width=True)
+            st.markdown(f"""
+                <div class='nm-inset' style='text-align:center; padding:0.6rem;'>
+                    <p style='margin:0; font-size:0.75rem; color:{bench_clr}; font-weight:700;'>
+                        {bench_msg} ({abs(diff):.1f}h diff)
+                    </p>
+                </div>
+            """, unsafe_allow_html=True)
+
+
         # Behavioral pattern signals
         st.markdown("<span class='sec-label'>Behavioral Pattern Signals</span>", unsafe_allow_html=True)
         signals = []
@@ -776,6 +827,42 @@ elif menu == "Psychological Assessment":
                         <p style='font-size:0.76rem;color:#6a6287;margin:0;line-height:1.5;'>{desc}</p>
                     </div>
                 """, unsafe_allow_html=True)
+
+        st.markdown("<br>", unsafe_allow_html=True)
+        row3_1, row3_2 = st.columns(2, gap="medium")
+        
+        with row3_1:
+            # Graph 3: Clinical Dimension Share (Pie Chart)
+            st.markdown("<span class='sec-label'>Risk Dimension Proportions</span>", unsafe_allow_html=True)
+            fig_pie = go.Figure(data=[go.Pie(
+                labels=["Preoccupation","Tolerance","Mood Mod.","Relapse","Withdrawal","Conflict"],
+                values=[q1, q2, q3, q4, q5, q6],
+                hole=.6,
+                marker=dict(colors=["#4f46e5","#7c3aed","#f472b6","#ee5e76","#f59e0b","#10b981"]),
+                textinfo='none'
+            )])
+            fig_pie.update_layout(**NM, height=260, showlegend=True, 
+                legend=dict(orientation="h", yanchor="bottom", y=-0.2, xanchor="center", x=0.5, font=dict(size=9)))
+            st.plotly_chart(fig_pie, use_container_width=True)
+
+        with row3_2:
+            # Graph 4: Digital Sustainability (Horizontal Bar)
+            st.markdown("<span class='sec-label'>Digital Sustainability Index</span>", unsafe_allow_html=True)
+            # Calculated metrics for sustainability
+            metrics = ["Sleep Health", "Time Control", "social Focus"]
+            # Inverse of the risk points (5 is perfect health)
+            m_vals = [max(1, 5 - (q4//1.2)), max(1, 5 - (q2//1.2)), max(1, 5 - (q6//1.2))]
+            
+            fig_hbar = go.Figure(go.Bar(
+                x=m_vals, y=metrics, orientation='h',
+                marker=dict(color=color, line=dict(width=0)),
+                width=0.4
+            ))
+            fig_hbar.update_layout(**NM, height=260,
+                xaxis=dict(range=[0, 5], tickvals=[1,2,3,4,5], gridcolor='rgba(148,163,184,0.1)'),
+                yaxis=dict(tickfont=dict(size=10, color='#9aa0bc')))
+            st.plotly_chart(fig_hbar, use_container_width=True)
+
 
         # ══════════════════════════════════════════
         #  IMPROVED CLICKABLE FEEDBACK SYSTEM
