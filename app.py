@@ -822,30 +822,34 @@ elif menu == "Psychological Assessment":
 
 
         with g2:
-            # Graph 2: Dynamic Comparison Bar Chart (visual change on high risk)
+            # Graph 2: Refined Comparison Bar Chart
             st.markdown("<span class='sec-label'>Risk vs Wellbeing Index</span>", unsafe_allow_html=True)
             wellbeing_val = max(2, 31 - total)
             
-            fig_bar = go.Figure()
-            fig_bar.add_trace(go.Bar(
-                name='Active Risk',
-                x=['Status'], y=[total],
-                marker_color='#ee5e76' if total > 18 else '#3b82f6',
-                width=0.4
-            ))
-            fig_bar.add_trace(go.Bar(
-                name='Inner Wellbeing',
-                x=['Status'], y=[wellbeing_val],
-                marker_color='#10b981',
-                width=0.4
+            # Use distinct categories for cleaner separation
+            labels = ['Risk Index', 'Wellness Level']
+            values = [total, wellbeing_val]
+            colors = ['#ee5e76' if total > 18 else '#3b82f6', '#10b981']
+            
+            fig_bar = go.Figure(go.Bar(
+                x=labels, 
+                y=values,
+                text=[f"{v}" for v in values],
+                textposition='auto',
+                marker_color=colors,
+                width=0.5, # Sleeker bar width
+                marker_line_width=0
             ))
             
             fig_bar.update_layout(
-                **NM, height=220, barmode='group',
-                yaxis=dict(range=[0, 32], gridcolor='rgba(148,163,184,0.05)'),
-                showlegend=True, legend=dict(font=dict(size=8), orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
+                **NM, height=220,
+                xaxis=dict(tickfont=dict(size=11, color='#94a3b8')),
+                yaxis=dict(range=[0, 35], gridcolor='rgba(148,163,184,0.05)', showticklabels=False),
+                showlegend=False,
+                bargap=0.4 # Professional gap between bars
             )
             st.plotly_chart(fig_bar, use_container_width=True)
+
 
         # ══════════════════════════════════════════
         #  IMPROVED CLICKABLE FEEDBACK SYSTEM
