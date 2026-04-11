@@ -1,12 +1,20 @@
 import time
 import json
 import os
+import ctypes
 from datetime import datetime
 from plyer import notification
 
 # Constants
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 CONFIG_PATH = os.path.join(BASE_DIR, 'screen_config.json')
+
+def get_uptime_ms():
+    """Returns system uptime in milliseconds (Windows specific)."""
+    try:
+        return ctypes.windll.kernel32.GetTickCount64()
+    except:
+        return 0
 
 def get_config():
     if os.path.exists(CONFIG_PATH):
@@ -46,10 +54,20 @@ def monitor():
             
         current_date = datetime.now().strftime("%Y-%m-%d")
         current_ts = datetime.now().timestamp()
+        current_uptime = get_uptime_ms()
         
-        # New Day Reset
+        # 1. Reboot Detection Reset
+        last_uptime = config.get("last_uptime_ms", 0)
+        # If current uptime is less than last recorded, system was switched off/on
+        if current_uptime < last_uptime:
+            print("Reboot detected! Resetting session timer.")
+            config["elapsed_secs"] = 0.0
+            config["alert_sent"] = {}
+        
+        config["last_uptime_ms"] = current_uptime
+
+        # 2. New Day Reset
         if config.get("date") != current_date:
-            # Archive old day to history
             old_date = config.get("date")
             history = config.get("history", {})
             if old_date and config.get("elapsed_secs", 0) > 0:
@@ -66,9 +84,9 @@ def monitor():
             
         # Update Elapsed Time
         last_update = config.get("last_update", current_ts)
-        # We only add time if the gap is reasonable (e.g. within last 5 minutes)
-        # to avoid jumps if the computer was asleep
         delta = current_ts - last_update
+        
+        # Only add time if the gap is reasonable (within 5 mins)
         if 0 < delta < 300: 
             config["elapsed_secs"] = config.get("elapsed_secs", 0.0) + delta
         

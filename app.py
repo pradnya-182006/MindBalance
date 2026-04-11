@@ -8,6 +8,7 @@ from datetime import datetime
 import json
 import os
 import subprocess
+import ctypes
 import streamlit.components.v1 as components
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -1058,24 +1059,30 @@ elif menu == "Screen Time Controller":
     if "history" not in config:
         config["history"] = {}
 
-    # Auto-reset on new day (matches background_monitor logic)
-    if not config or config.get("date") != current_date:
-        # Archive yesterday before reset
-        yesterday = config.get("date", "")
-        history = config.get("history", {})
-        if yesterday and config.get("elapsed_secs", 0) > 0:
-            history[yesterday] = config.get("elapsed_secs", 0.0)
-            if len(history) > 30:
-                oldest = sorted(history)[0]
-                del history[oldest]
+    # Auto-reset logic (Day Change + Reboot Detection)
+    current_uptime = 0
+    try: current_uptime = ctypes.windll.kernel32.GetTickCount64()
+    except: pass
+
+    is_reboot = current_uptime > 0 and current_uptime < config.get("last_uptime_ms", 0)
+    is_new_day = config.get("date") != current_date
+
+    if is_new_day or is_reboot:
+        if is_new_day:
+            yesterday = config.get("date", "")
+            history = config.get("history", {})
+            if yesterday and config.get("elapsed_secs", 0) > 0:
+                history[yesterday] = config.get("elapsed_secs", 0.0)
+                if len(history) > 30:
+                    history.pop(min(history.keys()))
+            config["history"] = history
+            config["date"] = current_date
+        
         config.update({
-            "limit_hours": config.get("limit_hours", 4.0),
-            "status": "active",
-            "date": current_date,
             "elapsed_secs": 0.0,
             "last_update": current_ts,
-            "history": history,
             "alert_sent": {},
+            "last_uptime_ms": current_uptime
         })
         with open(CONFIG_PATH,'w') as f: json.dump(config, f, indent=2)
 
@@ -1092,11 +1099,20 @@ elif menu == "Screen Time Controller":
         if st.button("⟶  Activate Real-Time Guard", key="act"):
             config["limit_hours"]=new_limit; config["status"]="active"
             config["last_update"]=current_ts
+            config["last_uptime_ms"]=current_uptime
             with open(CONFIG_PATH,'w') as f: json.dump(config, f, indent=2)
-            try: subprocess.Popen(["python", os.path.join(BASE_DIR, "background_monitor.py")],
-                    creationflags=subprocess.CREATE_NO_WINDOW if os.name=='nt' else 0)
-            except: pass
-            st.success("✓ AI Guard is now active in the background!")
+            
+            # Start detached background process
+            monitor_path = os.path.join(BASE_DIR, "background_monitor.py")
+            try:
+                # Use 'start' on windows to ensure it detaches completely
+                subprocess.Popen(["python", monitor_path], 
+                                creationflags=subprocess.CREATE_NO_WINDOW | subprocess.DETACHED_PROCESS if os.name=='nt' else 0,
+                                close_fds=True)
+            except: 
+                pass
+            st.success("✓ AI Guard is now active in the background! (Persistence Enabled)")
+
         st.markdown('</div>', unsafe_allow_html=True)
 
         # Pause / Resume toggle
