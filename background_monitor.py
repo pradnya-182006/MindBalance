@@ -93,21 +93,32 @@ def save_config(cfg: dict):
 # ── Notification Provider (Cross-Platform) ─────────────────────────────────
 def send_alert(title: str, message: str):
     log.info(f"NOTIFICATION >> {title}: {message}")
+    
+    # Sound feedback (Terminal bell)
+    try: sys.stdout.write('\a'); sys.stdout.flush()
+    except: pass
+
+    # 1. Primary: Plyer
     if HAS_PLYER:
         try:
             notification.notify(title=title, message=message, app_name="MindBalance", timeout=12)
             return
         except: pass
     
-    # Fallbacks
+    # 2. Native OS Fallbacks
     try:
         sys_name = platform.system()
         if sys_name == "Linux":
             subprocess.run(["notify-send", "-i", "dialog-warning", title, message], check=False)
-        elif sys_name == "Darwin":
+        elif sys_name == "Darwin": # macOS
             subprocess.run(["osascript", "-e", f'display notification "{message}" with title "{title}"'], check=False)
-    except:
-        print(f"\a[{title}] {message}\n")
+        elif sys_name == "Windows":
+            ps_cmd = f'[reflection.assembly]::loadwithpartialname("System.Windows.Forms");$i=[System.Windows.Forms.ToolTipIcon]::Warning;$n=new-object System.Windows.Forms.NotifyIcon;$n.icon=[system.drawing.systemicons]::Exclamation;$n.visible=$true;$n.showballoontext(5000,"{title}","{message}",$i)'
+            subprocess.run(["powershell", "-Command", ps_cmd], check=False)
+    except Exception as e:
+        log.error(f"Ultimate fallback triggered: {e}")
+        # Final fallback - terminal output
+        print(f"\n🔔 [{title}] {message}\n")
 
 # ── Tracking Logic ──────────────────────────────────────────────────────────
 def monitor():

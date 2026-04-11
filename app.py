@@ -8,6 +8,7 @@ from datetime import datetime, date, timedelta
 import json
 import os
 import sys
+import time
 import subprocess
 import ctypes
 import streamlit.components.v1 as components
@@ -66,28 +67,28 @@ def local_css():
         --glass-border: rgba(255, 255, 255, 0.9);
         --glass-shadow: 0 15px 45px -10px rgba(79, 70, 229, 0.18);
     }
-    
+   
     html, body, [class*="css"], .stApp {
         font-family: 'Nunito', sans-serif !important;
         color: var(--tb) !important;
     }
-    
+   
     /* Main Background */
     .stApp, [data-testid="stAppViewContainer"] {
-        background: linear-gradient(135deg, #eef2ff 0%, #f3e8ff 50%, #f8fafc 100%) !important; 
+        background: linear-gradient(135deg, #eef2ff 0%, #f3e8ff 50%, #f8fafc 100%) !important;
         background-attachment: fixed !important;
     }
 
     [data-testid="stHeader"], [data-testid="stToolbar"] { background: transparent !important; box-shadow: none !important; }
     .main .block-container { padding: 2.5rem 2.8rem !important; max-width: 1120px; }
-    
+   
     /* Sidebar Glassmorphism */
-    [data-testid="stSidebar"] { 
+    [data-testid="stSidebar"] {
         background-color: rgba(255, 255, 255, 0.4) !important;
         backdrop-filter: blur(24px) !important;
         -webkit-backdrop-filter: blur(24px) !important;
-        border-right: 1px solid rgba(255, 255, 255, 0.5) !important; 
-        box-shadow: 4px 0 30px rgba(99, 102, 241, 0.05) !important; 
+        border-right: 1px solid rgba(255, 255, 255, 0.5) !important;
+        box-shadow: 4px 0 30px rgba(99, 102, 241, 0.05) !important;
     }
     [data-testid="stSidebar"] .block-container { padding: 1.8rem 1rem !important; }
 
@@ -96,7 +97,7 @@ def local_css():
     h2 { font-weight: 700 !important; color: var(--th) !important; font-size: 1.3rem !important; border: none !important; padding: 0 !important; }
     h3 { font-weight: 600 !important; color: var(--th) !important; font-size: 1rem !important; }
     p { color: var(--tb); line-height: 1.7; }
-    .highlight-text { 
+    .highlight-text {
         background: var(--grad) !important;
         -webkit-background-clip: text !important;
         -webkit-text-fill-color: transparent !important;
@@ -104,18 +105,18 @@ def local_css():
     }
 
     /* Cards - Glassmorphism */
-    .nm-card { 
-        background: var(--glass-bg); 
-        border-radius: 20px; 
-        padding: 1.8rem 2rem; 
-        margin-bottom: 1.2rem; 
-        box-shadow: var(--glass-shadow); 
+    .nm-card {
+        background: var(--glass-bg);
+        border-radius: 20px;
+        padding: 1.8rem 2rem;
+        margin-bottom: 1.2rem;
+        box-shadow: var(--glass-shadow);
         backdrop-filter: blur(20px);
         -webkit-backdrop-filter: blur(20px);
         border: 1px solid var(--glass-border);
         border-top: 1px solid rgba(255,255,255,1);
         border-left: 1px solid rgba(255,255,255,1);
-        transition: transform .3s ease, box-shadow .3s ease; 
+        transition: transform .3s ease, box-shadow .3s ease;
     }
     /* Custom Scrollbar */
     ::-webkit-scrollbar { width: 8px; }
@@ -123,125 +124,125 @@ def local_css():
     ::-webkit-scrollbar-thumb { background: rgba(79, 70, 229, 0.2); border-radius: 10px; }
     ::-webkit-scrollbar-thumb:hover { background: rgba(79, 70, 229, 0.4); }
 
-    .nm-card:hover { 
-        transform: translateY(-4px); 
-        box-shadow: 0 25px 50px -12px rgba(79, 70, 229, 0.25); 
+    .nm-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 25px 50px -12px rgba(79, 70, 229, 0.25);
         border-color: var(--primary);
     }
-    
-    .nm-sm { 
-        background: var(--glass-bg); 
-        border-radius: 16px; 
-        padding: 1.2rem 1.3rem; 
-        box-shadow: var(--glass-shadow); 
+   
+    .nm-sm {
+        background: var(--glass-bg);
+        border-radius: 16px;
+        padding: 1.2rem 1.3rem;
+        box-shadow: var(--glass-shadow);
         backdrop-filter: blur(20px);
         border: 1px solid var(--glass-border);
     }
-    .nm-inset { 
-        background: rgba(255, 255, 255, 0.3); 
-        border-radius: 14px; 
-        padding: 1rem 1.2rem; 
-        box-shadow: inset 0 2px 8px rgba(99, 102, 241, 0.05); 
+    .nm-inset {
+        background: rgba(255, 255, 255, 0.3);
+        border-radius: 14px;
+        padding: 1rem 1.2rem;
+        box-shadow: inset 0 2px 8px rgba(99, 102, 241, 0.05);
         border: 1px solid rgba(255, 255, 255, 0.5);
     }
 
     .sec-label { font-size: 0.72rem; font-weight: 700; color: var(--tm); text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 0.75rem; display: block; }
 
     /* Pills */
-    .stat-pill { 
-        display: inline-flex; align-items: center; gap: 7px; 
-        background: rgba(255, 255, 255, 0.8); 
-        border-radius: 50px; padding: 0.4rem 1rem; 
-        box-shadow: 0 4px 12px rgba(99, 102, 241, 0.05); 
+    .stat-pill {
+        display: inline-flex; align-items: center; gap: 7px;
+        background: rgba(255, 255, 255, 0.8);
+        border-radius: 50px; padding: 0.4rem 1rem;
+        box-shadow: 0 4px 12px rgba(99, 102, 241, 0.05);
         border: 1px solid rgba(255, 255, 255, 0.9);
-        font-size: 0.78rem; font-weight: 700; color: var(--th); margin: 3px; 
+        font-size: 0.78rem; font-weight: 700; color: var(--th); margin: 3px;
     }
     .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
 
-    .feat-card { 
-        background: var(--glass-bg); border-radius: 18px; padding: 1.3rem; 
+    .feat-card {
+        background: var(--glass-bg); border-radius: 18px; padding: 1.3rem;
         box-shadow: var(--glass-shadow); backdrop-filter: blur(16px);
-        border: 1px solid var(--glass-border); transition: all .3s ease; 
+        border: 1px solid var(--glass-border); transition: all .3s ease;
     }
     .feat-card:hover { box-shadow: 0 15px 35px -10px rgba(99, 102, 241, 0.2); transform: translateY(-4px); }
     .feat-icon { width: 44px; height: 44px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 20px; margin-bottom: 0.75rem; box-shadow: 0 4px 15px rgba(99, 102, 241, 0.15); background: #ffffff; }
 
     /* Buttons */
-    .stButton>button { 
-        background: rgba(255, 255, 255, 0.7) !important; 
-        color: var(--primary) !important; 
-        border: 1px solid rgba(255, 255, 255, 1) !important; 
-        border-radius: 50px !important; 
-        padding: 0.65rem 1.6rem !important; 
-        font-family: 'Nunito', sans-serif !important; 
-        font-weight: 700 !important; font-size: 0.95rem !important; 
-        box-shadow: 0 8px 20px rgba(99, 102, 241, 0.1) !important; 
-        backdrop-filter: blur(12px); transition: all .3s ease !important; width: 100%; 
+    .stButton>button {
+        background: rgba(255, 255, 255, 0.7) !important;
+        color: var(--primary) !important;
+        border: 1px solid rgba(255, 255, 255, 1) !important;
+        border-radius: 50px !important;
+        padding: 0.65rem 1.6rem !important;
+        font-family: 'Nunito', sans-serif !important;
+        font-weight: 700 !important; font-size: 0.95rem !important;
+        box-shadow: 0 8px 20px rgba(99, 102, 241, 0.1) !important;
+        backdrop-filter: blur(12px); transition: all .3s ease !important; width: 100%;
     }
-    .stButton>button:hover { 
-        box-shadow: 0 12px 25px rgba(168, 85, 247, 0.2) !important; 
-        background: #ffffff !important; 
-        transform: translateY(-2px); 
+    .stButton>button:hover {
+        box-shadow: 0 12px 25px rgba(168, 85, 247, 0.2) !important;
+        background: #ffffff !important;
+        transform: translateY(-2px);
     }
     .stButton>button:active { transform: translateY(0); }
 
     /* Primary CTA */
-    .cta-btn>button { 
-        background: var(--grad) !important; 
+    .cta-btn>button {
+        background: var(--grad) !important;
         color: #fff !important; border: none !important;
-        box-shadow: 0 8px 25px rgba(168, 85, 247, 0.4) !important; 
+        box-shadow: 0 8px 25px rgba(168, 85, 247, 0.4) !important;
     }
-    .cta-btn>button:hover { 
-        background: linear-gradient(135deg, #7c7eff 0%, #bd73fa 100%) !important; 
-        box-shadow: 0 12px 30px rgba(168, 85, 247, 0.6) !important; 
-        color: #fff !important; 
-        transform: translateY(-2px); 
+    .cta-btn>button:hover {
+        background: linear-gradient(135deg, #7c7eff 0%, #bd73fa 100%) !important;
+        box-shadow: 0 12px 30px rgba(168, 85, 247, 0.6) !important;
+        color: #fff !important;
+        transform: translateY(-2px);
     }
 
     /* Submit Button */
-    [data-testid="stFormSubmitButton"]>button, 
-    [data-testid="stFormSubmitButton"]>button p, 
-    [data-testid="stFormSubmitButton"]>button span { 
-        background: var(--grad) !important; 
-        color: white !important; border: none !important; border-radius: 50px !important; 
-        font-weight: 700 !important; font-size: 0.95rem !important; padding: 0.7rem 2rem !important; 
-        box-shadow: 0 8px 25px rgba(79, 70, 229, 0.4) !important; width: 100%; transition: all .3s ease !important; 
+    [data-testid="stFormSubmitButton"]>button,
+    [data-testid="stFormSubmitButton"]>button p,
+    [data-testid="stFormSubmitButton"]>button span {
+        background: var(--grad) !important;
+        color: white !important; border: none !important; border-radius: 50px !important;
+        font-weight: 700 !important; font-size: 0.95rem !important; padding: 0.7rem 2rem !important;
+        box-shadow: 0 8px 25px rgba(79, 70, 229, 0.4) !important; width: 100%; transition: all .3s ease !important;
     }
     [data-testid="stFormSubmitButton"]>button:hover,
-    [data-testid="stFormSubmitButton"]>button:hover p { 
-        box-shadow: 0 12px 30px rgba(79, 70, 229, 0.6) !important; 
-        transform: translateY(-2px); 
+    [data-testid="stFormSubmitButton"]>button:hover p {
+        box-shadow: 0 12px 30px rgba(79, 70, 229, 0.6) !important;
+        transform: translateY(-2px);
         color: white !important;
     }
 
     /* Inputs */
     .stTextInput>div>div>input, .stNumberInput>div>div>input, .stSelectbox>div>div, .stTextArea textarea {
-        background: rgba(255, 255, 255, 0.7) !important; 
-        border: 1px solid rgba(255, 255, 255, 0.9) !important; 
+        background: rgba(255, 255, 255, 0.7) !important;
+        border: 1px solid rgba(255, 255, 255, 0.9) !important;
         border-radius: 12px !important;
         box-shadow: inset 0 2px 6px rgba(99, 102, 241, 0.05) !important;
-        color: var(--th) !important; font-weight: 600 !important; 
+        color: var(--th) !important; font-weight: 600 !important;
         transition: all 0.2s ease !important;
     }
     .stTextInput>div>div>input:focus, .stNumberInput>div>div>input:focus, .stSelectbox>div>div:focus-within {
-        box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.2) !important; 
-        border-color: var(--primary) !important; 
+        box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.2) !important;
+        border-color: var(--primary) !important;
         background: #ffffff !important;
     }
     .stTextInput label, .stNumberInput label, .stSelectbox label, .stSlider label, .stTextArea label {
         font-size: 0.78rem !important; font-weight: 700 !important; color: var(--tm) !important;
-        text-transform: uppercase !important; letter-spacing: 0.8px !important; 
+        text-transform: uppercase !important; letter-spacing: 0.8px !important;
     }
 
-    [data-testid="stSlider"]>div>div>div { 
-        background: var(--grad) !important; 
-        height: 10px !important; 
+    [data-testid="stSlider"]>div>div>div {
+        background: var(--grad) !important;
+        height: 10px !important;
         border-radius: 10px !important;
     }
-    [data-testid="stSlider"] [data-testid="stThumb"] { 
-        background: white !important; 
-        box-shadow: 0 0 15px rgba(79, 70, 229, 0.5) !important; 
-        border: 4px solid var(--primary) !important; 
+    [data-testid="stSlider"] [data-testid="stThumb"] {
+        background: white !important;
+        box-shadow: 0 0 15px rgba(79, 70, 229, 0.5) !important;
+        border: 4px solid var(--primary) !important;
         width: 24px !important;
         height: 24px !important;
         transition: transform 0.2s ease !important;
@@ -252,39 +253,39 @@ def local_css():
     [data-testid="stSlider"] [data-testid="stThumb"]::after {
         content: ""; width: 8px; height: 8px; background: var(--grad); border-radius: 50%;
     }
-    
+   
     [data-testid="stSlider"] [data-testid="stTickBar"] { display: none !important; }
 
-    [data-testid="stMetric"] { 
-        background: var(--glass-bg) !important; 
-        border-radius: 16px !important; 
-        padding: 1.2rem 1.4rem !important; 
-        box-shadow: var(--glass-shadow) !important; 
-        border: 1px solid var(--glass-border); 
-        backdrop-filter: blur(20px); 
+    [data-testid="stMetric"] {
+        background: var(--glass-bg) !important;
+        border-radius: 16px !important;
+        padding: 1.2rem 1.4rem !important;
+        box-shadow: var(--glass-shadow) !important;
+        border: 1px solid var(--glass-border);
+        backdrop-filter: blur(20px);
     }
     [data-testid="stMetricValue"] { color: var(--th) !important; font-weight: 800 !important; font-size: 2.2rem !important; }
 
     /* Tabs */
-    .stTabs [data-baseweb="tab-list"] { 
-        background: rgba(255, 255, 255, 0.5) !important; 
-        border-radius: 14px; padding: 6px; gap: 8px; 
+    .stTabs [data-baseweb="tab-list"] {
+        background: rgba(255, 255, 255, 0.5) !important;
+        border-radius: 14px; padding: 6px; gap: 8px;
         backdrop-filter: blur(16px);
         box-shadow: inset 0 2px 8px rgba(99, 102, 241, 0.05);
     }
     .stTabs [data-baseweb="tab"] { background: transparent !important; color: var(--tm) !important; border-radius: 10px !important; font-weight: 700 !important; font-size: 0.9rem !important; padding: 0.6rem 1.2rem !important; }
-    .stTabs [aria-selected="true"] { 
-        background: #ffffff !important; 
-        color: var(--primary) !important; 
-        box-shadow: 0 8px 20px rgba(99, 102, 241, 0.1) !important; 
+    .stTabs [aria-selected="true"] {
+        background: #ffffff !important;
+        color: var(--primary) !important;
+        box-shadow: 0 8px 20px rgba(99, 102, 241, 0.1) !important;
     }
 
     /* Sidebar Radio */
     [data-testid="stRadio"]>div { gap: 4px !important; }
     [data-testid="stRadio"] label { background: transparent !important; border-radius: 12px !important; padding: 0.65rem 1rem !important; font-size: 0.95rem !important; font-weight: 700 !important; color: var(--th) !important; cursor: pointer; transition: all .3s ease; display: flex !important; align-items: center; gap: 8px; }
-    [data-testid="stRadio"] label:hover { 
-        background: rgba(255, 255, 255, 0.8) !important; 
-        color: var(--primary) !important; 
+    [data-testid="stRadio"] label:hover {
+        background: rgba(255, 255, 255, 0.8) !important;
+        color: var(--primary) !important;
         box-shadow: 0 4px 15px rgba(99, 102, 241, 0.08) !important;
         transform: translateX(3px);
     }
@@ -516,7 +517,7 @@ with st.sidebar:
             ("Assessments",f"{total_assessments:,}","#604e9c"),
             ("Model Accuracy","99.1%","#2bb996"),
         ]])
-    
+   
     st.markdown(f"""
         <p style='font-size:0.62rem;color:#9aa0bc;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:10px;padding-left:4px;'>Quick Stats</p>
         <div style='display:flex;flex-direction:column;gap:7px;'>
@@ -690,10 +691,10 @@ elif menu == "Psychological Assessment":
         q1, q5 = m_val, m_val
         q3, q4 = i_val, i_val
         q2, q6 = u_val, u_val
-        
+       
         total = q1+q2+q3+q4+q5+q6
         total = min(30, max(6, total))
-        
+       
         label,color,advice,cures = get_bsmas_result(total)
         severity  = "LOW" if total<=12 else "MODERATE" if total<=18 else "HIGH" if total<=24 else "SEVERE"
         badge_cls = "badge-l" if total<=12 else "badge-m" if total<=18 else "badge-h"
@@ -809,16 +810,16 @@ elif menu == "Psychological Assessment":
 
         st.markdown("<br>", unsafe_allow_html=True)
         g1, g2 = st.columns(2, gap="medium")
-        
+       
         with g1:
             # Graph 1: Radial Dimension Intensity (Circular Bar Chart)
             st.markdown("<span class='sec-label'>Dimension Intensity Profile</span>", unsafe_allow_html=True)
-            
+           
             # Values for the 4 rings
             radial_vals = [q1, q2, q3, q4]
             radial_labels = ["Preoccupation", "Tolerance", "Mood Mod.", "Relapse"]
             radial_colors = ['#7c3aed', '#6366f1', '#f59e0b', '#ee5e76']
-            
+           
             fig_rad = go.Figure()
             for i, (val, lbl, clr) in enumerate(zip(radial_vals, radial_labels, radial_colors)):
                 fig_rad.add_trace(go.Barpolar(
@@ -849,14 +850,14 @@ elif menu == "Psychological Assessment":
             # Graph 2: Refined Comparison Bar Chart
             st.markdown("<span class='sec-label'>Risk vs Wellbeing Index</span>", unsafe_allow_html=True)
             wellbeing_val = max(2, 31 - total)
-            
+           
             # Use distinct categories for cleaner separation
             labels = ['Risk Index', 'Wellness Level']
             values = [total, wellbeing_val]
             colors = ['#ee5e76' if total > 18 else '#3b82f6', '#10b981']
-            
+           
             fig_bar = go.Figure(go.Bar(
-                x=labels, 
+                x=labels,
                 y=values,
                 text=[f"{v}" for v in values],
                 textposition='auto',
@@ -864,7 +865,7 @@ elif menu == "Psychological Assessment":
                 width=0.5, # Sleeker bar width
                 marker_line_width=0
             ))
-            
+           
             fig_bar.update_layout(
                 **NM, height=220,
                 xaxis=dict(
@@ -876,8 +877,8 @@ elif menu == "Psychological Assessment":
                 yaxis=dict(
                     title="Values (0-30)",
                     title_font=dict(size=10, color='#9aa0bc'),
-                    range=[0, 35], 
-                    gridcolor='rgba(148,163,184,0.05)', 
+                    range=[0, 35],
+                    gridcolor='rgba(148,163,184,0.05)',
                     showticklabels=True,
                     showline=True, linecolor='rgba(148,163,184,0.1)'
                 ),
@@ -907,7 +908,7 @@ elif menu == "Psychological Assessment":
                 with fb_cols[i]:
                     is_active = st.session_state.fb_val == val
                     btn_style = f"border:2px solid {clr}; background:{clr}15;" if is_active else "border:1px solid rgba(0,0,0,0.05); background:white;"
-                    
+                   
                     # We use a button inside a styled div
                     st.markdown(f"""
                         <div style='text-align:center; padding:10px; border-radius:12px; {btn_style}'>
@@ -935,10 +936,10 @@ elif menu == "Psychological Assessment":
                 """, unsafe_allow_html=True)
 
                 fb_comment = st.text_area("Final Thoughts (Optional)", placeholder="What should we improve?", height=80, key="fb_comment_key")
-                
+               
                 if st.button("⟶  Confirm & Submit Final Report", key="fb_final_submit"):
                     fb_path = os.path.join(BASE_DIR, 'feedback_log.json')
-                    entry = {"timestamp": datetime.now().isoformat(), "rating": st.session_state.fb_val, 
+                    entry = {"timestamp": datetime.now().isoformat(), "rating": st.session_state.fb_val,
                             "comment": st.session_state.fb_comment_key, "bsmas_score": total, "total_usage_h": usage}
                     try:
                         existing = []
@@ -951,7 +952,7 @@ elif menu == "Psychological Assessment":
                     st.rerun()
             else:
                 st.markdown("<p style='text-align:center; color:#94a3b8; font-size:0.8rem; margin-top:1rem;'>Click an emoji above to provide feedback</p>", unsafe_allow_html=True)
-            
+           
             st.markdown("</div>", unsafe_allow_html=True)
         else:
             st.markdown(f"<p style='color:#2bb996;font-weight:700;text-align:center;'>Feedback recorded. Thank you!</p>", unsafe_allow_html=True)
@@ -975,7 +976,7 @@ elif menu == "Dataset Insights":
         # Use radio instead of tabs to ensure animations play exactly when the user switches views
         view = st.radio("Insights View:", ["🧠 Mental Health Impact", "📱 Platform Usage", "⚠️ Risk Distribution"], horizontal=True, label_visibility="collapsed")
         st.markdown("<br>", unsafe_allow_html=True)
-        
+       
         if view == "🧠 Mental Health Impact":
             fig = px.scatter(df,x="Avg_Daily_Usage_Hours",y="Mental_Health_Score",color="Status",trendline="ols",
                 color_discrete_sequence=["#ee5e76","#2bb996","#6366f1"],template="none",
@@ -984,18 +985,18 @@ elif menu == "Dataset Insights":
             fig.update_traces(marker=dict(size=7,opacity=0.7))
             st.plotly_chart(fig,use_container_width=True)
             st.markdown("<div class='nm-inset'><p style='color:#475569;font-size:0.86rem;margin:0;font-weight:600;'>💡 Mental resilience drops sharply after <strong style='color:#1e293b;'>5 hours</strong> of daily usage. Addicted students scored 38% lower.</p></div>", unsafe_allow_html=True)
-            
+           
         elif view == "📱 Platform Usage":
             if "Most_Used_Platform" in df.columns:
                 pc = df["Most_Used_Platform"].value_counts().reset_index()
                 pc.columns = ["Platform","Count"]
-                
+               
                 colors = ["#f43f5e", "#10b981", "#6366f1", "#f59e0b", "#94a3b8", "#a855f7", "#62b1ff"]
                 fig2 = px.bar(pc,x="Platform",y="Count",color="Platform",template="none",
                     color_discrete_sequence=colors)
                 fig2.update_layout(**NM,height=360,showlegend=False)
                 fig2.update_traces(marker_line_width=0,width=0.45)
-                
+               
                 # Render using 60fps CSS injected HTML
                 html_str = fig2.to_html(include_plotlyjs="cdn", full_html=False)
                 animated_html = """
@@ -1015,17 +1016,17 @@ elif menu == "Dataset Insights":
                 """ + html_str
                 import streamlit.components.v1 as components
                 components.html(animated_html, height=380)
-                    
+                   
         elif view == "⚠️ Risk Distribution":
             if "Status" in df.columns:
                 sc = df["Status"].value_counts()
-                
+               
                 fig3 = go.Figure(go.Pie(labels=sc.index,values=sc.values, hole=0.55,
                     marker=dict(colors=["#f43f5e","#10b981","#f59e0b"],line=dict(color='rgba(255,255,255,0.8)',width=4)),
                     textfont=dict(family='Nunito',size=13,color='#1e293b')))
                 fig3.update_layout(**NM,height=340,showlegend=True,
                     legend=dict(font=dict(color='#475569',family='Nunito')))
-                
+               
                 html_str = fig3.to_html(include_plotlyjs="cdn", full_html=False)
                 animated_html = """
                 <style>
@@ -1059,7 +1060,7 @@ elif menu == "Screen Time Controller":
     CONFIG_PATH = os.path.join(BASE_DIR, 'screen_config.json')
     current_date = datetime.now().strftime("%Y-%m-%d")
     current_ts = datetime.now().timestamp()
-    
+   
     config = {}
     if os.path.exists(CONFIG_PATH):
         try:
@@ -1086,7 +1087,7 @@ elif menu == "Screen Time Controller":
 
     is_reboot = current_uptime > 0 and current_uptime < config.get("last_uptime_ms", 0)
     is_new_day = config.get("date") != current_date
-    
+   
     # Enhanced reset: Detect long gaps as secondary reboot signal
     last_update_val = config.get("last_update", current_ts)
     long_gap = (current_ts - last_update_val > 3600) and (current_uptime < 600000)
@@ -1101,7 +1102,7 @@ elif menu == "Screen Time Controller":
                     history.pop(min(history.keys(), default=""), None)
             config["history"] = history
             config["date"] = current_date
-        
+       
         config.update({
             "elapsed_secs": 0.0,
             "last_update": current_ts,
@@ -1160,19 +1161,19 @@ elif menu == "Screen Time Controller":
             tmp_p = CONFIG_PATH + ".tmp"
             with open(tmp_p,'w') as f: json.dump(config, f, indent=2)
             os.replace(tmp_p, CONFIG_PATH)
-            
+           
             # Start detached background process if not already running
             if not is_running:
                 # Force remove stale PID if exists
                 if os.path.exists(pid_file):
                     try: os.remove(pid_file)
                     except: pass
-                    
+                   
                 monitor_path = os.path.join(BASE_DIR, "background_monitor.py")
                 python_exe = sys.executable
                 if os.name == 'nt':
                     python_exe = python_exe.replace("python.exe", "pythonw.exe")
-                
+               
                 try:
                     # Redirect output to log to capture any startup errors
                     log_p = os.path.join(BASE_DIR, "mindbalance.log")
@@ -1180,8 +1181,8 @@ elif menu == "Screen Time Controller":
                         creationflags = 0
                         if os.name == 'nt':
                             creationflags = subprocess.CREATE_NO_WINDOW | subprocess.DETACHED_PROCESS
-                        
-                        subprocess.Popen([python_exe, monitor_path], 
+                       
+                        subprocess.Popen([python_exe, monitor_path],
                                         stdout=log_f, stderr=log_f,
                                         creationflags=creationflags,
                                         close_fds=True,
@@ -1228,7 +1229,7 @@ elif menu == "Screen Time Controller":
         now_ts = datetime.now().timestamp()
         status_label = config.get("status", "inactive").upper()
         status_clr = "#2bb996" if status_label == "ACTIVE" else "#e9a147" if status_label == "PAUSED" else "#94a3b8"
-        
+       
         # Web-Safe Fallback: Increased threshold to 60s to avoid double counting with monitor
         if status_label == "ACTIVE" and (now_ts - last_hb > 60):
             delta_web = now_ts - config.get("last_update", now_ts)
@@ -1242,7 +1243,7 @@ elif menu == "Screen Time Controller":
 
         hb_str = datetime.fromtimestamp(last_hb).strftime("%H:%M:%S") if last_hb > 0 else "Never"
 
-        
+       
         st.markdown(f"""
             <div class='nm-inset' style='margin-top:0;display:flex;align-items:center;gap:10px;'>
                 <span class='dot' style='background:{status_clr};width:10px;height:10px;'></span>
@@ -1254,7 +1255,7 @@ elif menu == "Screen Time Controller":
         # Auto-Refresh Component to keep timer ticking
         components.html("""
             <script>
-                window.parent.document.addEventListener('keydown', function(e) { }); 
+                window.parent.document.addEventListener('keydown', function(e) { });
                 setTimeout(function() {
                     window.parent.document.dispatchEvent(new CustomEvent('streamlit:status', {detail: 'rerun'}));
                     window.location.reload();
@@ -1276,7 +1277,7 @@ elif menu == "Screen Time Controller":
         if elapsed >= 60:
             disp_elapsed = round(elapsed / 60.0, 1)
             disp_suffix = "h"
-        
+       
         disp_limit = limit_m
         disp_limit_suffix = "m limit"
         if limit_m >= 60:
@@ -1286,7 +1287,7 @@ elif menu == "Screen Time Controller":
         # Digital Wellbeing Stats
         st.markdown('<div class="section-title">Digital Wellbeing Stats</div>', unsafe_allow_html=True)
         w1, w2, w3 = st.columns(3)
-        
+       
         # Calculate Trend
         hist_data = config.get("history", {})
         y_date = (date.today() - timedelta(days=1)).isoformat()
@@ -1295,13 +1296,26 @@ elif menu == "Screen Time Controller":
         if yesterday_val > 0:
             diff_pct = ((elapsed - yesterday_val) / yesterday_val) * 100
             delta_val = f"{diff_pct:+.1f}% vs Yesterday"
-        
+       
         with w1:
             st.metric("Total Notifications", f"{config.get('total_alerts_count', 0)}", help="Alerts triggered today")
         with w2:
             st.metric("Usage Trend", f"{elapsed:.1f}m", delta=delta_val, delta_color="inverse")
         with w3:
             st.metric("Wellness Goal", "Active", help="Monitoring for stress signs")
+
+        # --- CLOUD NOTIFICATION FALLBACK (st.toast) ---
+        # Show alerts even on Streamlit Cloud
+        if elapsed >= limit_m:
+            st.toast("🚨 TIME'S UP! Take a break immediately.", icon="🛑")
+            st.error("❗ SCREEN LIMIT REACHED: Please step away from the screen.")
+        elif elapsed >= limit_m * 0.9:
+            st.toast("⚠️ Warning: 90% of your daily limit used.", icon="⚠️")
+        elif elapsed >= limit_m * 0.5:
+            # We use session state to ensure the toast doesn't pop up every single second
+            if "last_toast_time" not in st.session_state or (time.time() - st.session_state.last_toast_time > 300):
+                st.toast("🔔 Goal Update: 50% screen limit reached.", icon="🔔")
+                st.session_state.last_toast_time = time.time()
 
         # Gauge with highlighted alert zones
         fig_g = go.Figure(go.Indicator(mode="gauge+number+delta", value=elapsed,
@@ -1429,3 +1443,4 @@ elif menu == "Screen Time Controller":
                 <p style='color:#9aa0bc;font-size:0.85rem;margin:0;'>📊 Usage history will appear here after your first full day of tracking.</p>
             </div>
         """, unsafe_allow_html=True)
+
