@@ -1150,16 +1150,38 @@ elif menu == "Screen Time Controller":
 
         # Status badge with heartbeat
         last_hb = config.get("last_heartbeat", 0)
+        now_ts = datetime.now().timestamp()
+        
+        # Web-Safe Fallback: If background monitor is quiet, increment time in UI
+        if status_label == "ACTIVE" and (now_ts - last_hb > 25):
+            delta_web = now_ts - config.get("last_update", now_ts)
+            if 0 < delta_web < 180: # Within 3 mins
+                config["elapsed_secs"] = config.get("elapsed_secs", 0.0) + delta_web
+                config["last_update"] = now_ts
+                with open(CONFIG_PATH,'w') as f: json.dump(config, f, indent=2)
+
         hb_str = datetime.fromtimestamp(last_hb).strftime("%H:%M:%S") if last_hb > 0 else "Never"
         status_label = config.get("status", "inactive").upper()
         status_clr = "#2bb996" if status_label == "ACTIVE" else "#e9a147" if status_label == "PAUSED" else "#94a3b8"
+        
         st.markdown(f"""
             <div class='nm-inset' style='margin-top:0;display:flex;align-items:center;gap:10px;'>
                 <span class='dot' style='background:{status_clr};width:10px;height:10px;'></span>
                 <span style='font-size:0.8rem;font-weight:700;color:{status_clr};'>{status_label}</span>
-                <span style='font-size:0.7rem;color:#9aa0bc;margin-left:auto;'>Last Active: {hb_str} | Close tab safely.</span>
+                <span style='font-size:0.7rem;color:#9aa0bc;margin-left:auto;'>Last Active: {hb_str} | Tab Sync: ON</span>
             </div>
         """, unsafe_allow_html=True)
+
+        # Auto-Refresh Component to keep timer ticking
+        components.html("""
+            <script>
+                window.parent.document.addEventListener('keydown', function(e) { }); 
+                setTimeout(function() {
+                    window.parent.document.dispatchEvent(new CustomEvent('streamlit:status', {detail: 'rerun'}));
+                    window.location.reload();
+                }, 30000); // 30s refresh
+            </script>
+        """, height=0)
 
 
     with cb:
