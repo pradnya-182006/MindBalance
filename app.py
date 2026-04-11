@@ -1096,22 +1096,25 @@ elif menu == "Screen Time Controller":
 
         # Activate button
         st.markdown('<div class="cta-btn">', unsafe_allow_html=True)
-        if st.button("⟶  Activate Real-Time Guard", key="act"):
+        is_running = os.path.exists(os.path.join(BASE_DIR, 'guard.pid'))
+        
+        if st.button("⟶  Activate Real-Time Guard", key="act", disabled=is_running and status_label=="ACTIVE"):
             config["limit_hours"]=new_limit; config["status"]="active"
             config["last_update"]=current_ts
             config["last_uptime_ms"]=current_uptime
             with open(CONFIG_PATH,'w') as f: json.dump(config, f, indent=2)
             
-            # Start detached background process
-            monitor_path = os.path.join(BASE_DIR, "background_monitor.py")
-            try:
-                # Use 'start' on windows to ensure it detaches completely
-                subprocess.Popen(["python", monitor_path], 
-                                creationflags=subprocess.CREATE_NO_WINDOW | subprocess.DETACHED_PROCESS if os.name=='nt' else 0,
-                                close_fds=True)
-            except: 
-                pass
-            st.success("✓ AI Guard is now active in the background! (Persistence Enabled)")
+            # Start detached background process if not already running
+            if not is_running:
+                monitor_path = os.path.join(BASE_DIR, "background_monitor.py")
+                try:
+                    subprocess.Popen(["python", monitor_path], 
+                                    creationflags=subprocess.CREATE_NO_WINDOW | subprocess.DETACHED_PROCESS if os.name=='nt' else 0,
+                                    close_fds=True)
+                    st.success("✓ AI Guard started successfully!")
+                except: pass
+            else:
+                st.info("✓ AI Guard is already active.")
 
         st.markdown('</div>', unsafe_allow_html=True)
 
@@ -1136,16 +1139,19 @@ elif menu == "Screen Time Controller":
                 st.rerun()
         st.markdown("</div>", unsafe_allow_html=True)
 
-        # Status badge
+        # Status badge with heartbeat
+        last_hb = config.get("last_heartbeat", 0)
+        hb_str = datetime.fromtimestamp(last_hb).strftime("%H:%M:%S") if last_hb > 0 else "Never"
         status_label = config.get("status", "inactive").upper()
         status_clr = "#2bb996" if status_label == "ACTIVE" else "#e9a147" if status_label == "PAUSED" else "#94a3b8"
         st.markdown(f"""
             <div class='nm-inset' style='margin-top:0;display:flex;align-items:center;gap:10px;'>
                 <span class='dot' style='background:{status_clr};width:10px;height:10px;'></span>
                 <span style='font-size:0.8rem;font-weight:700;color:{status_clr};'>{status_label}</span>
-                <span style='font-size:0.76rem;color:#9aa0bc;margin-left:auto;'>Guard runs in background — close this tab safely.</span>
+                <span style='font-size:0.7rem;color:#9aa0bc;margin-left:auto;'>Last Active: {hb_str} | Close tab safely.</span>
             </div>
         """, unsafe_allow_html=True)
+
 
     with cb:
         limit_m      = new_limit * 60.0
