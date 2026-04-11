@@ -20,7 +20,7 @@ The latest update introduces the **MindBalance Screen Guard**, a robust backgrou
 ---
 
 ## 🚀 Live Demo
-**Try the web analysis here:** [social-media-risk-annalyzer.streamlit.app](https://social-media-risk-annalyzer-5muhcog2gkgi425d6mcvza.streamlit.app/)
+**Try the web analysis here:** [social-media-risk-annalyzer.streamlit.app](https://mindbalance-p5u4majqrenfkewqnt32mn.streamlit.app/)
 
 *(Note: The background monitoring features require a local installation to access system-level uptime and notifications.)*
 
