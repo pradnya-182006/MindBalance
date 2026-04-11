@@ -105,7 +105,7 @@ streamlit run app.py
 
 ## Developers
 
-**Pradnya Maruti Ghokshe** | **Sanket Khobre** | **Prachi Shinde**
+**Pradnya Maruti Ghokshe** | **Sanket Khobre** | **Prachi Shinde**| **Himesh Landge**
 
 B.Tech — AI and Data Science | NMIET, Pune
 
