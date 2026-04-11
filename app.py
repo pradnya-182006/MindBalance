@@ -1154,23 +1154,37 @@ elif menu == "Screen Time Controller":
         bar_color    = "#2bb996" if progress_pct<0.5 else "#e9a147" if progress_pct<0.75 else "#ee5e76" if progress_pct<1.0 else "#b84040"
         remaining    = max(0,limit_m-elapsed)
 
+        # Determine display formatting (Minutes vs Hours)
+        disp_elapsed = elapsed
+        disp_suffix = "m"
+        if elapsed >= 60:
+            disp_elapsed = round(elapsed / 60.0, 1)
+            disp_suffix = "h"
+        
+        disp_limit = limit_m
+        disp_limit_suffix = "m limit"
+        if limit_m >= 60:
+            disp_limit = round(limit_m / 60.0, 1)
+            disp_limit_suffix = "h limit"
+
         # Gauge with multi-level alert zones (50%, 75%, 90%, 100%)
-        fig_g = go.Figure(go.Indicator(mode="gauge+number+delta",value=round(elapsed,1),
-            delta={'reference':limit_m,'suffix':'m limit','font':{'color':'#9aa0bc','size':12}},
-            number={'suffix':"m",'font':{'color':bar_color,'family':'DM Mono','size':34}},
+        fig_g = go.Figure(go.Indicator(mode="gauge+number+delta",value=disp_elapsed,
+            delta={'reference':disp_limit,'suffix':disp_limit_suffix,'font':{'color':'#9aa0bc','size':12}},
+            number={'suffix':disp_suffix,'font':{'color':bar_color,'family':'DM Mono','size':34}},
             title={'text':"Session Time",'font':{'color':'#9aa0bc','size':12}},
-            gauge={'axis':{'range':[0,limit_m*1.2],'tickcolor':'#9aa0bc','tickfont':{'color':'#9aa0bc','size':9}},
+            gauge={'axis':{'range':[0,disp_limit*1.2],'tickcolor':'#9aa0bc','tickfont':{'color':'#9aa0bc','size':9}},
                    'bar':{'color':bar_color,'thickness':0.26},'bgcolor':'rgba(0,0,0,0)','borderwidth':0,
                    'steps':[
-                       {'range':[0,limit_m*0.50],'color':'rgba(74,170,136,.08)'},
-                       {'range':[limit_m*0.50,limit_m*0.75],'color':'rgba(99,102,241,.08)'},
-                       {'range':[limit_m*0.75,limit_m*0.90],'color':'rgba(233,161,71,.1)'},
-                       {'range':[limit_m*0.90,limit_m],'color':'rgba(238,94,118,.12)'},
-                       {'range':[limit_m,limit_m*1.2],'color':'rgba(184,64,64,.12)'},
+                       {'range':[0,disp_limit*0.50],'color':'rgba(74,170,136,.08)'},
+                       {'range':[disp_limit*0.50,disp_limit*0.75],'color':'rgba(99,102,241,.08)'},
+                       {'range':[disp_limit*0.75,disp_limit*0.90],'color':'rgba(233,161,71,.1)'},
+                       {'range':[disp_limit*0.90,disp_limit],'color':'rgba(238,94,118,.12)'},
+                       {'range':[disp_limit,disp_limit*1.2],'color':'rgba(184,64,64,.12)'},
                    ],
-                   'threshold':{'line':{'color':'#d96b6b','width':3},'thickness':0.75,'value':limit_m}}))
+                   'threshold':{'line':{'color':'#d96b6b','width':3},'thickness':0.75,'value':disp_limit}}))
         fig_g.update_layout(**NM,height=260)
         st.plotly_chart(fig_g,use_container_width=True)
+
 
     # ── Progress bar ──────────────────────────────
     st.progress(progress_pct, text=f"{int(progress_pct*100)}% of daily limit consumed")
