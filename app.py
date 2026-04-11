@@ -7,6 +7,7 @@ import plotly.express as px
 from datetime import datetime
 import json
 import os
+import sys
 import subprocess
 import ctypes
 import streamlit.components.v1 as components
@@ -1105,16 +1106,24 @@ elif menu == "Screen Time Controller":
             with open(CONFIG_PATH,'w') as f: json.dump(config, f, indent=2)
             
             # Start detached background process if not already running
+            pid_file = os.path.join(BASE_DIR, 'guard.pid')
             if not is_running:
+                # Force remove stale PID if exists
+                if os.path.exists(pid_file):
+                    try: os.remove(pid_file)
+                    except: pass
+                    
                 monitor_path = os.path.join(BASE_DIR, "background_monitor.py")
                 try:
-                    subprocess.Popen(["python", monitor_path], 
+                    subprocess.Popen([sys.executable, monitor_path], 
                                     creationflags=subprocess.CREATE_NO_WINDOW | subprocess.DETACHED_PROCESS if os.name=='nt' else 0,
                                     close_fds=True)
                     st.success("✓ AI Guard started successfully!")
-                except: pass
+                except Exception as e:
+                    st.error(f"Failed to start: {e}")
             else:
                 st.info("✓ AI Guard is already active.")
+
 
         st.markdown('</div>', unsafe_allow_html=True)
 

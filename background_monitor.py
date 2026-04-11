@@ -133,4 +133,11 @@ def monitor():
             os.remove(pid_path)
 
 if __name__ == "__main__":
-    monitor()
+    try:
+        monitor()
+    except Exception as e:
+        import traceback
+        error_path = os.path.join(BASE_DIR, 'guard_error.txt')
+        with open(error_path, 'a') as f:
+            f.write(f"\n[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] CRASH:\n")
+            f.write(str(e) + "\n" + traceback.format_exc() + "\n")
