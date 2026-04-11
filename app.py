@@ -1099,7 +1099,7 @@ elif menu == "Screen Time Controller":
         st.markdown('<div class="cta-btn">', unsafe_allow_html=True)
         is_running = os.path.exists(os.path.join(BASE_DIR, 'guard.pid'))
         
-        if st.button("⟶  Activate Real-Time Guard", key="act", disabled=is_running and config.get("status")=="active"):
+        if st.button("⟶  Activate Real-Time Guard", key="act"):
             config["limit_hours"]=new_limit; config["status"]="active"
             config["last_update"]=current_ts
             config["last_uptime_ms"]=current_uptime
