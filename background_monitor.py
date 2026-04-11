@@ -1,193 +1,209 @@
 import time
 import json
 import os
-import ctypes
 import sys
+import signal
+import logging
 import subprocess
-from datetime import datetime
-from plyer import notification
+import platform
+import shutil
+from datetime import datetime, date
+from pathlib import Path
 
-# Constants
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-CONFIG_PATH = os.path.join(BASE_DIR, 'screen_config.json')
+# ── Dynamic Notification Support ───────────────────────────────────────────
+try:
+    from plyer import notification
+    HAS_PLYER = True
+except (ImportError, Exception):
+    HAS_PLYER = False
 
-def get_uptime_ms():
-    """Returns system uptime in milliseconds (Windows specific)."""
+# ── Paths & Constants ──────────────────────────────────────────────────────
+BASE_DIR      = Path(__file__).parent.absolute()
+CONFIG_FILE   = BASE_DIR / "screen_config.json"
+LOG_FILE      = BASE_DIR / "mindbalance.log"
+PID_FILE      = BASE_DIR / "guard.pid"
+
+POLL_INTERVAL = 15          # Check more frequently for better accuracy
+IDLE_THRESHOLD = 300        # 5 mins idle gap
+ALERT_COOLDOWN = 900        # 15 mins for repeat alerts
+
+# ── Logging Configuration ──────────────────────────────────────────────────
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(message)s",
+    handlers=[
+        logging.FileHandler(LOG_FILE),
+        logging.StreamHandler(sys.stdout),
+    ],
+)
+log = logging.getLogger("MindBalance")
+
+# ── Cross-Platform Uptime ──────────────────────────────────────────────────
+def get_system_uptime_ms() -> float:
+    os_name = platform.system()
     try:
-        return ctypes.windll.kernel32.GetTickCount64()
-    except:
-        return 0
+        if os_name == "Windows":
+            import ctypes
+            return float(ctypes.windll.kernel32.GetTickCount64())
+        elif os_name == "Linux":
+            with open("/proc/uptime", "r") as f:
+                return float(f.readline().split()[0]) * 1000.0
+        elif os_name == "Darwin":
+            output = subprocess.check_output(["sysctl", "-n", "kern.boottime"]).decode()
+            import re
+            match = re.search(r'sec = (\d+)', output)
+            if match:
+                boot_time = int(match.group(1))
+                return (time.time() - boot_time) * 1000.0
+    except Exception as e:
+        log.debug(f"Uptime error: {e}")
+    return 0.0
 
-def set_startup(active=True):
-    """Adds/Removes the script from Windows Startup using a .bat file."""
-    startup_folder = os.path.join(os.environ['APPDATA'], 'Microsoft', 'Windows', 'Start Menu', 'Programs', 'Startup')
-    bat_path = os.path.join(startup_folder, 'MindBalance_Guard.bat')
-    
-    if active:
-        # Create a hidden-window batch starter
-        # Using pythonw.exe if available to avoid console window
-        python_exe = sys.executable.replace("python.exe", "pythonw.exe")
-        script_path = os.path.abspath(__file__)
-        with open(bat_path, 'w') as f:
-            f.write(f'@echo off\nstart "" "{python_exe}" "{script_path}"')
-        return True
-    else:
-        if os.path.exists(bat_path):
-            os.remove(bat_path)
-        return False
+# ── Graceful Shutdown ──────────────────────────────────────────────────────
+_running = True
+def _handle_signal(sig, frame):
+    global _running
+    log.info(f"Signal {sig} received. Cleaning up...")
+    _running = False
 
-def get_config():
-    if os.path.exists(CONFIG_PATH):
+signal.signal(signal.SIGINT,  _handle_signal)
+signal.signal(signal.SIGTERM, _handle_signal)
+
+# ── Config Persistence (with atomic write & locking attempt) ──────────────
+def load_config() -> dict:
+    if CONFIG_FILE.exists():
         try:
-            with open(CONFIG_PATH, 'r') as f:
+            with CONFIG_FILE.open("r") as f:
                 return json.load(f)
-        except:
-            return {}
+        except Exception as e:
+            log.warning(f"Config read failed: {e}")
     return {}
 
-def save_config(config):
+def save_config(cfg: dict):
+    # Use a temporary file for atomic write (prevents corruption if power cut resets)
+    tmp_path = CONFIG_FILE.with_suffix(".tmp")
     try:
-        with open(CONFIG_PATH, 'w') as f:
-            json.dump(config, f, indent=2)
+        with tmp_path.open("w") as f:
+            json.dump(cfg, f, indent=2)
+        # On some systems, os.replace is needed for atomic update
+        os.replace(str(tmp_path), str(CONFIG_FILE))
     except Exception as e:
-        print(f"Error saving config: {e}")
+        log.error(f"Save failed: {e}")
 
-def send_alert(pct, message):
-    try:
-        notification.notify(
-            title=f"MindBalance Guard | {pct}% Limit Reached",
-            message=message,
-            app_icon=None,
-            timeout=10,
-        )
-    except Exception as e:
-        print(f"Notification error: {e}")
-
-def log_event(msg):
-    log_path = os.path.join(BASE_DIR, 'guard_log.txt')
-    try:
-        with open(log_path, 'a') as f:
-            f.write(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] {msg}\n")
-    except: pass
-
-def monitor():
-    pid_path = os.path.join(BASE_DIR, 'guard.pid')
-    
-    # Check if another instance is running
-    if os.path.exists(pid_path):
+# ── Notification Provider (Cross-Platform) ─────────────────────────────────
+def send_alert(title: str, message: str):
+    log.info(f"NOTIFICATION >> {title}: {message}")
+    if HAS_PLYER:
         try:
-            with open(pid_path, 'r') as f:
-                old_pid = int(f.read())
-            # Check if process exists (Windows)
+            notification.notify(title=title, message=message, app_name="MindBalance", timeout=12)
+            return
+        except: pass
+    
+    # Fallbacks
+    try:
+        sys_name = platform.system()
+        if sys_name == "Linux":
+            subprocess.run(["notify-send", "-i", "dialog-warning", title, message], check=False)
+        elif sys_name == "Darwin":
+            subprocess.run(["osascript", "-e", f'display notification "{message}" with title "{title}"'], check=False)
+    except:
+        print(f"\a[{title}] {message}\n")
+
+# ── Tracking Logic ──────────────────────────────────────────────────────────
+def monitor():
+    # 1. PID Check
+    if PID_FILE.exists():
+        try:
+            old_pid = int(PID_FILE.read_text().strip())
             if old_pid != os.getpid():
-                subprocess.check_output(f"tasklist /FI \"PID eq {old_pid}\"", shell=True)
-                log_event(f"Guard already running with PID {old_pid}. Exiting.")
+                # Check if process is still alive
+                if platform.system() != "Windows":
+                    os.kill(old_pid, 0)
+                else:
+                    import ctypes
+                    h = ctypes.windll.kernel32.OpenProcess(1, False, old_pid)
+                    if h: ctypes.windll.kernel32.CloseHandle(h)
+                    else: raise ProcessLookupError
+                
+                log.error(f"Ghost instance detected (PID {old_pid}). Aborting.")
                 return
-        except:
-            pass
+        except (ProcessLookupError, ValueError, OSError):
+            PID_FILE.unlink(missing_ok=True)
+
+    PID_FILE.write_text(str(os.getpid()))
+    log.info(f"Monitor Started (PID: {os.getpid()})")
 
     try:
-        with open(pid_path, 'w') as f:
-            f.write(str(os.getpid()))
-        
-        log_event("MindBalance Background Guard Started...")
-        
-        # Ensure startup is configured
-        set_startup(True)
-        
-        while True:
-            config = get_config()
-            if not config or config.get("status") != "active":
-                time.sleep(15)
-                continue
-                
-            current_date = datetime.now().strftime("%Y-%m-%d")
-            current_ts = datetime.now().timestamp()
-            current_uptime = get_uptime_ms()
-            
-            # 1. Reboot Detection Reset
-            # Modified: Also reset if uptime is very low (started within last 10 mins) 
-            # and last_update was long ago (suspected shutdown/hibernation)
-            last_uptime = config.get("last_uptime_ms", 0)
-            last_update = config.get("last_update", current_ts)
-            
-            reboot_detected = (0 < current_uptime < last_uptime)
-            long_gap_detected = (current_ts - last_update > 3600) and (current_uptime < 600000) # 10 mins uptime + 1hr gap
-            
-            if reboot_detected or long_gap_detected:
-                reason = "Reboot detected" if reboot_detected else "System wakeup/restart detected"
-                log_event(f"{reason} (Uptime: {current_uptime}ms). Resetting timer.")
-                config["elapsed_secs"] = 0.0
-                config["alert_sent"] = {}
-            
-            config["last_uptime_ms"] = current_uptime
+        while _running:
+            now_ts = time.time()
+            today = date.today().isoformat()
+            uptime_ms = get_system_uptime_ms()
 
-            # 2. New Day Reset
-            if config.get("date") != current_date:
-                log_event(f"New day detected: {current_date}. Archiving old data.")
-                old_date = config.get("date")
-                history = config.get("history", {})
-                if old_date and config.get("elapsed_secs", 0) > 0:
-                    history[old_date] = config.get("elapsed_secs", 0.0)
-                
-                config.update({
-                    "date": current_date,
-                    "elapsed_secs": 0.0,
-                    "last_update": current_ts,
-                    "alert_sent": {},
-                    "history": history
-                })
-                save_config(config)
-                
-            # 3. Update Elapsed Time
-            last_update = config.get("last_update", current_ts)
-            delta = current_ts - last_update
+            # Load config at the start of loop to catch UI changes
+            cfg = load_config()
+            if not cfg: 
+                time.sleep(5)
+                continue
+
+            # Check Status
+            if cfg.get("status") != "active":
+                cfg["last_heartbeat"] = now_ts
+                save_config(cfg)
+                time.sleep(10)
+                continue
+
+            # Day Change Reset
+            if cfg.get("date") != today:
+                log.info(f"Resetting for new day: {today}")
+                if cfg.get("date"):
+                    cfg.setdefault("history", {})[cfg["date"]] = cfg.get("elapsed_secs", 0.0)
+                cfg.update({"date": today, "elapsed_secs": 0.0, "alert_sent": {}})
+
+            # Time Progress
+            last_update = cfg.get("last_update", now_ts)
+            delta = now_ts - last_update
+
+            if 0 < delta < IDLE_THRESHOLD:
+                cfg["elapsed_secs"] = cfg.get("elapsed_secs", 0.0) + delta
+            elif delta >= IDLE_THRESHOLD:
+                log.info(f"Wakeup detected (Gap: {int(delta)}s). Skipping idle time.")
+
+            cfg["last_update"] = now_ts
+            cfg["last_uptime_ms"] = uptime_ms
+            cfg["last_heartbeat"] = now_ts # Signal to UI that we are alive
+
+            # Alert Logic
+            limit_s = cfg.get("limit_hours", 4.0) * 3600
+            elapsed = cfg.get("elapsed_secs", 0.0)
+            ratio = elapsed / limit_s if limit_s > 0 else 0
             
-            # Add time if delta is less than 5 mins (standard update)
-            if 0 < delta < 300: 
-                config["elapsed_secs"] = config.get("elapsed_secs", 0.0) + delta
+            alerts = cfg.setdefault("alert_sent", {})
+            levels = [(1.0, "100%", "Limit Reached! Stay healthy, take a break."),
+                      (0.9, "90%", "Almost there! 90% reached."),
+                      (0.75, "75%", "75% of limit used."),
+                      (0.5, "50%", "Halfway mark reached.")]
             
-            config["last_update"] = current_ts
-            config["last_heartbeat"] = current_ts # Live heartbeat
+            for thr, label, msg in levels:
+                if ratio >= thr:
+                    last_sent = alerts.get(label, 0)
+                    cooldown = ALERT_COOLDOWN if label == "100%" else 86400
+                    if now_ts - last_sent > cooldown:
+                        send_alert(f"MindBalance: {label}", msg)
+                        alerts[label] = now_ts
+                        cfg["total_alerts_count"] = cfg.get("total_alerts_count", 0) + 1
+
+            save_config(cfg)
             
-            # 4. Limit & Alert Logic
-            limit_h = config.get("limit_hours", 4.0)
-            limit_s = limit_h * 3600
-            elapsed_s = config.get("elapsed_secs", 0.0)
-            
-            progress = elapsed_s / limit_s if limit_s > 0 else 1.0
-            alert_sent = config.get("alert_sent", {})
-            
-            thresholds = [
-                (1.00, "100%", "⚠️ Daily Limit Reached! Time to disconnect and rest."),
-                (0.90, "90%", "🏃 Almost there. You have reached 90% of your daily limit."),
-                (0.75, "75%", "🕒 Attention: 75% of your screen limit has been consumed."),
-                (0.50, "50%", "📅 Halfway mark: You have used 50% of your daily allowance.")
-            ]
-            
-            for frac, label, msg in thresholds:
-                if progress >= frac and label not in alert_sent:
-                    send_alert(label, msg)
-                    alert_sent[label] = True
-                    config["alert_sent"] = alert_sent
-            
-            save_config(config)
-            time.sleep(10) # Check every 10 seconds for smoothness
+            # Precise sleep with exit check
+            for _ in range(POLL_INTERVAL):
+                if not _running: break
+                time.sleep(1)
+
+    except Exception as e:
+        log.exception(f"Monitor Crashed: {e}")
     finally:
-        if os.path.exists(pid_path):
-            try:
-                with open(pid_path, 'r') as f:
-                    saved_pid = int(f.read())
-                if saved_pid == os.getpid():
-                    os.remove(pid_path)
-            except: pass
+        PID_FILE.unlink(missing_ok=True)
+        log.info("Monitor Stopped Cleanly.")
 
 if __name__ == "__main__":
-    try:
-        monitor()
-    except Exception as e:
-        import traceback
-        error_path = os.path.join(BASE_DIR, 'guard_error.txt')
-        with open(error_path, 'a') as f:
-            f.write(f"\n[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] CRASH:\n")
-            f.write(str(e) + "\n" + traceback.format_exc() + "\n")
+    monitor()

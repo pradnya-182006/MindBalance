@@ -4,13 +4,34 @@ import numpy as np
 import pickle
 import plotly.graph_objects as go
 import plotly.express as px
-from datetime import datetime
+from datetime import datetime, date, timedelta
 import json
 import os
 import sys
 import subprocess
 import ctypes
 import streamlit.components.v1 as components
+import platform
+
+def get_uptime_ms():
+    os_name = platform.system()
+    try:
+        if os_name == "Windows":
+            return float(ctypes.windll.kernel32.GetTickCount64())
+        elif os_name == "Linux":
+            with open("/proc/uptime", "r") as f:
+                return float(f.readline().split()[0]) * 1000.0
+        elif os_name == "Darwin":
+            output = subprocess.check_output(["sysctl", "-n", "kern.boottime"]).decode()
+            import re
+            match = re.search(r'sec = (\d+)', output)
+            if match:
+                boot_time = int(match.group(1))
+                return (datetime.now().timestamp() - boot_time) * 1000.0
+    except:
+        pass
+    return 0
+
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -1061,9 +1082,7 @@ elif menu == "Screen Time Controller":
         config["history"] = {}
 
     # Auto-reset logic (Day Change + Reboot Detection)
-    current_uptime = 0
-    try: current_uptime = ctypes.windll.kernel32.GetTickCount64()
-    except: pass
+    current_uptime = get_uptime_ms()
 
     is_reboot = current_uptime > 0 and current_uptime < config.get("last_uptime_ms", 0)
     is_new_day = config.get("date") != current_date
@@ -1074,12 +1093,12 @@ elif menu == "Screen Time Controller":
 
     if is_new_day or is_reboot or long_gap:
         if is_new_day:
-            yesterday = config.get("date", "")
+            yesterday = config.get("date")
             history = config.get("history", {})
             if yesterday and config.get("elapsed_secs", 0) > 0:
                 history[yesterday] = config.get("elapsed_secs", 0.0)
                 if len(history) > 30:
-                    history.pop(min(history.keys()))
+                    history.pop(min(history.keys(), default=""), None)
             config["history"] = history
             config["date"] = current_date
         
@@ -1087,9 +1106,13 @@ elif menu == "Screen Time Controller":
             "elapsed_secs": 0.0,
             "last_update": current_ts,
             "alert_sent": {},
+            "total_alerts_count": 0,
             "last_uptime_ms": current_uptime
         })
-        with open(CONFIG_PATH,'w') as f: json.dump(config, f, indent=2)
+        # Atomic Save
+        tmp_p = CONFIG_PATH + ".tmp"
+        with open(tmp_p,'w') as f: json.dump(config, f, indent=2)
+        os.replace(tmp_p, CONFIG_PATH)
 
     # ── Guard Configuration & Gauge ──────────────
     ca,cb = st.columns([1,1], gap="large")
@@ -1106,16 +1129,39 @@ elif menu == "Screen Time Controller":
 
         # Activate button
         st.markdown('<div class="cta-btn">', unsafe_allow_html=True)
-        is_running = os.path.exists(os.path.join(BASE_DIR, 'guard.pid'))
-        
+        # Check if another instance is running
+        is_running = False
+        pid_file = os.path.join(BASE_DIR, 'guard.pid')
+        if os.path.exists(pid_file):
+            try:
+                with open(pid_file, 'r') as f:
+                    old_pid = int(f.read())
+                if os.name == 'nt':
+                    import ctypes
+                    PROCESS_QUERY_INFORMATION = 0x0400
+                    handle = ctypes.windll.kernel32.OpenProcess(PROCESS_QUERY_INFORMATION, False, old_pid)
+                    if handle:
+                        is_running = True
+                        ctypes.windll.kernel32.CloseHandle(handle)
+                else:
+                    try:
+                        os.kill(old_pid, 0)
+                        is_running = True
+                    except OSError:
+                        pass
+            except:
+                pass
+
         if st.button("⟶  Activate Real-Time Guard", key="act"):
             config["limit_hours"]=new_limit; config["status"]="active"
             config["last_update"]=current_ts
             config["last_uptime_ms"]=current_uptime
-            with open(CONFIG_PATH,'w') as f: json.dump(config, f, indent=2)
+            # Atomic Save
+            tmp_p = CONFIG_PATH + ".tmp"
+            with open(tmp_p,'w') as f: json.dump(config, f, indent=2)
+            os.replace(tmp_p, CONFIG_PATH)
             
             # Start detached background process if not already running
-            pid_file = os.path.join(BASE_DIR, 'guard.pid')
             if not is_running:
                 # Force remove stale PID if exists
                 if os.path.exists(pid_file):
@@ -1123,18 +1169,27 @@ elif menu == "Screen Time Controller":
                     except: pass
                     
                 monitor_path = os.path.join(BASE_DIR, "background_monitor.py")
-                python_exe = sys.executable.replace("python.exe", "pythonw.exe")
+                python_exe = sys.executable
+                if os.name == 'nt':
+                    python_exe = python_exe.replace("python.exe", "pythonw.exe")
+                
                 try:
-                    subprocess.Popen([python_exe, monitor_path], 
-                                    creationflags=subprocess.CREATE_NO_WINDOW | subprocess.DETACHED_PROCESS if os.name=='nt' else 0,
-                                    close_fds=True)
+                    # Redirect output to log to capture any startup errors
+                    log_p = os.path.join(BASE_DIR, "mindbalance.log")
+                    with open(log_p, "a") as log_f:
+                        creationflags = 0
+                        if os.name == 'nt':
+                            creationflags = subprocess.CREATE_NO_WINDOW | subprocess.DETACHED_PROCESS
+                        
+                        subprocess.Popen([python_exe, monitor_path], 
+                                        stdout=log_f, stderr=log_f,
+                                        creationflags=creationflags,
+                                        close_fds=True,
+                                        start_new_session=True)
                     st.success("✓ AI Guard started successfully!")
+                    st.rerun()
                 except Exception as e:
-                    # Fallback to standard python if pythonw fails
-                    subprocess.Popen([sys.executable, monitor_path], 
-                                    creationflags=subprocess.CREATE_NO_WINDOW | subprocess.DETACHED_PROCESS if os.name=='nt' else 0,
-                                    close_fds=True)
-                    st.success("✓ AI Guard started successfully!")
+                    st.error(f"Failed to start AI Guard: {e}")
             else:
                 st.info("✓ AI Guard is already active.")
 
@@ -1151,14 +1206,20 @@ elif menu == "Screen Time Controller":
                     config["last_update"] = current_ts
                 else:
                     config["status"] = "paused"
-                with open(CONFIG_PATH,'w') as f: json.dump(config, f, indent=2)
+                # Atomic Save
+                tmp_p = CONFIG_PATH + ".tmp"
+                with open(tmp_p,'w') as f: json.dump(config, f, indent=2)
+                os.replace(tmp_p, CONFIG_PATH)
                 st.rerun()
         with p2:
             if st.button("↺  Reset Timer", key="rst"):
                 config["elapsed_secs"]=0.0
                 config["last_update"]=current_ts
                 config["alert_sent"]={}
-                with open(CONFIG_PATH,'w') as f: json.dump(config, f, indent=2)
+                # Atomic Save
+                tmp_p = CONFIG_PATH + ".tmp"
+                with open(tmp_p,'w') as f: json.dump(config, f, indent=2)
+                os.replace(tmp_p, CONFIG_PATH)
                 st.rerun()
         st.markdown("</div>", unsafe_allow_html=True)
 
@@ -1168,13 +1229,16 @@ elif menu == "Screen Time Controller":
         status_label = config.get("status", "inactive").upper()
         status_clr = "#2bb996" if status_label == "ACTIVE" else "#e9a147" if status_label == "PAUSED" else "#94a3b8"
         
-        # Web-Safe Fallback: If background monitor is quiet, increment time in UI
-        if status_label == "ACTIVE" and (now_ts - last_hb > 25):
+        # Web-Safe Fallback: Increased threshold to 60s to avoid double counting with monitor
+        if status_label == "ACTIVE" and (now_ts - last_hb > 60):
             delta_web = now_ts - config.get("last_update", now_ts)
             if 0 < delta_web < 180: # Within 3 mins
                 config["elapsed_secs"] = config.get("elapsed_secs", 0.0) + delta_web
                 config["last_update"] = now_ts
-                with open(CONFIG_PATH,'w') as f: json.dump(config, f, indent=2)
+                # Atomic Save
+                tmp_p = CONFIG_PATH + ".tmp"
+                with open(tmp_p,'w') as f: json.dump(config, f, indent=2)
+                os.replace(tmp_p, CONFIG_PATH)
 
         hb_str = datetime.fromtimestamp(last_hb).strftime("%H:%M:%S") if last_hb > 0 else "Never"
 
@@ -1219,21 +1283,41 @@ elif menu == "Screen Time Controller":
             disp_limit = round(limit_m / 60.0, 1)
             disp_limit_suffix = "h limit"
 
-        # Gauge with multi-level alert zones (50%, 75%, 90%, 100%)
-        fig_g = go.Figure(go.Indicator(mode="gauge+number+delta",value=disp_elapsed,
-            delta={'reference':disp_limit,'suffix':disp_limit_suffix,'font':{'color':'#9aa0bc','size':12}},
-            number={'suffix':disp_suffix,'font':{'color':bar_color,'family':'DM Mono','size':34}},
+        # Digital Wellbeing Stats
+        st.markdown('<div class="section-title">Digital Wellbeing Stats</div>', unsafe_allow_html=True)
+        w1, w2, w3 = st.columns(3)
+        
+        # Calculate Trend
+        hist_data = config.get("history", {})
+        y_date = (date.today() - timedelta(days=1)).isoformat()
+        yesterday_val = hist_data.get(y_date, 0.0) / 60.0 # mins
+        delta_val = None
+        if yesterday_val > 0:
+            diff_pct = ((elapsed - yesterday_val) / yesterday_val) * 100
+            delta_val = f"{diff_pct:+.1f}% vs Yesterday"
+        
+        with w1:
+            st.metric("Total Notifications", f"{config.get('total_alerts_count', 0)}", help="Alerts triggered today")
+        with w2:
+            st.metric("Usage Trend", f"{elapsed:.1f}m", delta=delta_val, delta_color="inverse")
+        with w3:
+            st.metric("Wellness Goal", "Active", help="Monitoring for stress signs")
+
+        # Gauge with highlighted alert zones
+        fig_g = go.Figure(go.Indicator(mode="gauge+number+delta", value=elapsed,
+            delta={'reference':limit_m,'suffix':'m limit','font':{'color':'#9aa0bc','size':12}},
+            number={'suffix':'m','font':{'color':bar_color,'family':'DM Mono','size':34}},
             title={'text':"Session Time",'font':{'color':'#9aa0bc','size':12}},
-            gauge={'axis':{'range':[0,disp_limit*1.2],'tickcolor':'#9aa0bc','tickfont':{'color':'#9aa0bc','size':9}},
+            gauge={'axis':{'range':[0, max(limit_m*1.2, elapsed*1.1)],'tickcolor':'#9aa0bc','tickfont':{'color':'#9aa0bc','size':9}},
                    'bar':{'color':bar_color,'thickness':0.26},'bgcolor':'rgba(0,0,0,0)','borderwidth':0,
                    'steps':[
-                       {'range':[0,disp_limit*0.50],'color':'rgba(74,170,136,.08)'},
-                       {'range':[disp_limit*0.50,disp_limit*0.75],'color':'rgba(99,102,241,.08)'},
-                       {'range':[disp_limit*0.75,disp_limit*0.90],'color':'rgba(233,161,71,.1)'},
-                       {'range':[disp_limit*0.90,disp_limit],'color':'rgba(238,94,118,.12)'},
-                       {'range':[disp_limit,disp_limit*1.2],'color':'rgba(184,64,64,.12)'},
+                       {'range':[0,limit_m*0.50], 'color': 'rgba(16, 185, 129, 0.15)'}, # Safe - Green
+                       {'range':[limit_m*0.50,limit_m*0.75], 'color': 'rgba(79, 70, 229, 0.15)'}, # Moderate - Blue
+                       {'range':[limit_m*0.75,limit_m*0.90], 'color': 'rgba(245, 158, 11, 0.2)'}, # Warning - Amber
+                       {'range':[limit_m*0.90,limit_m], 'color': 'rgba(239, 68, 68, 0.2)'}, # Critical - Red
+                       {'range':[limit_m,max(limit_m*1.2, elapsed*1.1)], 'color': 'rgba(184, 64, 64, 0.25)'}, # Over Limit - Dark Red
                    ],
-                   'threshold':{'line':{'color':'#d96b6b','width':3},'thickness':0.75,'value':disp_limit}}))
+                   'threshold':{'line':{'color':'#d96b6b','width':3},'thickness':0.75,'value':limit_m}}))
         fig_g.update_layout(**NM,height=260)
         st.plotly_chart(fig_g,use_container_width=True)
 
