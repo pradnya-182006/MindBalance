@@ -2,6 +2,8 @@ import time
 import json
 import os
 import ctypes
+import sys
+import subprocess
 from datetime import datetime
 from plyer import notification
 
@@ -15,6 +17,24 @@ def get_uptime_ms():
         return ctypes.windll.kernel32.GetTickCount64()
     except:
         return 0
+
+def set_startup(active=True):
+    """Adds/Removes the script from Windows Startup using a .bat file."""
+    startup_folder = os.path.join(os.environ['APPDATA'], 'Microsoft', 'Windows', 'Start Menu', 'Programs', 'Startup')
+    bat_path = os.path.join(startup_folder, 'MindBalance_Guard.bat')
+    
+    if active:
+        # Create a hidden-window batch starter
+        # Using pythonw.exe if available to avoid console window
+        python_exe = sys.executable.replace("python.exe", "pythonw.exe")
+        script_path = os.path.abspath(__file__)
+        with open(bat_path, 'w') as f:
+            f.write(f'@echo off\nstart "" "{python_exe}" "{script_path}"')
+        return True
+    else:
+        if os.path.exists(bat_path):
+            os.remove(bat_path)
+        return False
 
 def get_config():
     if os.path.exists(CONFIG_PATH):
@@ -52,11 +72,28 @@ def log_event(msg):
 
 def monitor():
     pid_path = os.path.join(BASE_DIR, 'guard.pid')
+    
+    # Check if another instance is running
+    if os.path.exists(pid_path):
+        try:
+            with open(pid_path, 'r') as f:
+                old_pid = int(f.read())
+            # Check if process exists (Windows)
+            if old_pid != os.getpid():
+                subprocess.check_output(f"tasklist /FI \"PID eq {old_pid}\"", shell=True)
+                log_event(f"Guard already running with PID {old_pid}. Exiting.")
+                return
+        except:
+            pass
+
     try:
         with open(pid_path, 'w') as f:
             f.write(str(os.getpid()))
         
         log_event("MindBalance Background Guard Started...")
+        
+        # Ensure startup is configured
+        set_startup(True)
         
         while True:
             config = get_config()
@@ -69,9 +106,17 @@ def monitor():
             current_uptime = get_uptime_ms()
             
             # 1. Reboot Detection Reset
+            # Modified: Also reset if uptime is very low (started within last 10 mins) 
+            # and last_update was long ago (suspected shutdown/hibernation)
             last_uptime = config.get("last_uptime_ms", 0)
-            if 0 < current_uptime < last_uptime:
-                log_event(f"Reboot detected (Uptime: {current_uptime}ms < Last: {last_uptime}ms). Resetting timer.")
+            last_update = config.get("last_update", current_ts)
+            
+            reboot_detected = (0 < current_uptime < last_uptime)
+            long_gap_detected = (current_ts - last_update > 3600) and (current_uptime < 600000) # 10 mins uptime + 1hr gap
+            
+            if reboot_detected or long_gap_detected:
+                reason = "Reboot detected" if reboot_detected else "System wakeup/restart detected"
+                log_event(f"{reason} (Uptime: {current_uptime}ms). Resetting timer.")
                 config["elapsed_secs"] = 0.0
                 config["alert_sent"] = {}
             
@@ -130,7 +175,12 @@ def monitor():
             time.sleep(10) # Check every 10 seconds for smoothness
     finally:
         if os.path.exists(pid_path):
-            os.remove(pid_path)
+            try:
+                with open(pid_path, 'r') as f:
+                    saved_pid = int(f.read())
+                if saved_pid == os.getpid():
+                    os.remove(pid_path)
+            except: pass
 
 if __name__ == "__main__":
     try:

@@ -1067,8 +1067,12 @@ elif menu == "Screen Time Controller":
 
     is_reboot = current_uptime > 0 and current_uptime < config.get("last_uptime_ms", 0)
     is_new_day = config.get("date") != current_date
+    
+    # Enhanced reset: Detect long gaps as secondary reboot signal
+    last_update_val = config.get("last_update", current_ts)
+    long_gap = (current_ts - last_update_val > 3600) and (current_uptime < 600000)
 
-    if is_new_day or is_reboot:
+    if is_new_day or is_reboot or long_gap:
         if is_new_day:
             yesterday = config.get("date", "")
             history = config.get("history", {})
@@ -1093,7 +1097,12 @@ elif menu == "Screen Time Controller":
         st.markdown("<div class='nm-card'>", unsafe_allow_html=True)
         st.markdown("<span class='sec-label'>Guard Configuration</span>", unsafe_allow_html=True)
         new_limit = st.number_input("Daily Screen Limit (Hours)", 0.5, 12.0, float(config.get("limit_hours", 4.0)), 0.5)
-        st.markdown("<br>", unsafe_allow_html=True)
+        st.markdown(f"""
+            <p style='font-size:0.75rem;color:#2bb996;margin:10px 0 0;font-weight:700;'>
+                ✓ Auto-Startup: Active (Guard starts with Windows)
+            </p>
+            <br>
+        """, unsafe_allow_html=True)
 
         # Activate button
         st.markdown('<div class="cta-btn">', unsafe_allow_html=True)
@@ -1114,13 +1123,18 @@ elif menu == "Screen Time Controller":
                     except: pass
                     
                 monitor_path = os.path.join(BASE_DIR, "background_monitor.py")
+                python_exe = sys.executable.replace("python.exe", "pythonw.exe")
                 try:
-                    subprocess.Popen([sys.executable, monitor_path], 
+                    subprocess.Popen([python_exe, monitor_path], 
                                     creationflags=subprocess.CREATE_NO_WINDOW | subprocess.DETACHED_PROCESS if os.name=='nt' else 0,
                                     close_fds=True)
                     st.success("✓ AI Guard started successfully!")
                 except Exception as e:
-                    st.error(f"Failed to start: {e}")
+                    # Fallback to standard python if pythonw fails
+                    subprocess.Popen([sys.executable, monitor_path], 
+                                    creationflags=subprocess.CREATE_NO_WINDOW | subprocess.DETACHED_PROCESS if os.name=='nt' else 0,
+                                    close_fds=True)
+                    st.success("✓ AI Guard started successfully!")
             else:
                 st.info("✓ AI Guard is already active.")
 
